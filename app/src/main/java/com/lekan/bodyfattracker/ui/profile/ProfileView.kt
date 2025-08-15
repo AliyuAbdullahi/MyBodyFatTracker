@@ -15,6 +15,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,15 +23,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -63,6 +70,7 @@ import java.io.File
 
 // ... ProfileScreenUiState (if in a separate file, or defined in ViewModel)
 
+@OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 fun ProfileScreen(
@@ -146,7 +154,11 @@ fun ProfileScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        topBar = { // Optional: if you want a consistent TopAppBar
+
+        },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -159,26 +171,44 @@ fun ProfileScreen(
                     CircularProgressIndicator()
                 }
                 uiState.showCreateProfileButton -> {
-                    EmptyProfileView(onCreateProfileClicked = viewModel::onCreateProfileClicked)
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        EmptyProfileView(onCreateProfileClicked = viewModel::onCreateProfileClicked)
+                    }
                 }
-                else -> {
+                uiState.isEditing -> { // Show Form if editing or creating (after create button clicked)
                     ProfileForm(
                         name = uiState.nameInput,
                         age = uiState.ageInput,
                         bodyFatGoalInput = uiState.bodyFatGoalInput,
                         selectedGender = uiState.selectedGender,
-                        photoPath = uiState.photoPath, // <<< PASS photoPath
+                        photoPath = uiState.photoPath,
                         onNameChange = viewModel::onNameChanged,
                         onAgeChange = viewModel::onAgeChanged,
                         onBodyFatGoalChange = viewModel::onBodyFatGoalChanged,
                         onGenderSelect = viewModel::onGenderSelected,
-                        onPhotoPickerClick = { // <<< PASS callback to launch picker
+                        onPhotoPickerClick = {
                             launchImagePickerWithPermissionCheck()
                         },
                         onSaveClicked = viewModel::saveProfile,
                         canSave = uiState.canSave,
-                        isEditingOrCreating = uiState.isEditing
+                        isEditingOrCreating = true // Pass true to show save button logic
                     )
+                }
+                uiState.userProfile != null && !uiState.isEditing -> { // Show Overview if profile exists and not editing
+                    ProfileOverview(
+                        name = uiState.userProfile!!.name, // Safe due to userProfile != null check
+                        photoPath = uiState.userProfile!!.photoPath,
+                        bodyFatGoal = uiState.userProfile!!.bodyFatPercentGoal?.let { "$it %" }
+                            ?: stringResource(R.string.not_set_placeholder),
+                        gender = uiState.userProfile!!.gender,
+                        onEditProfileClicked = viewModel::onEditProfile
+                    )
+                }
+                else -> {
+                    // Fallback, should ideally be covered by isLoading or showCreateProfileButton
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("Something went wrong or no profile state.")
+                    }
                 }
             }
         }

@@ -80,6 +80,28 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    fun onEditProfile() {
+        viewModelScope.launch {
+            // Populate form fields from current profile if available, otherwise use current inputs
+            val currentProfile = state.value.userProfile
+            updateState {
+                copy(
+                    isEditing = true,
+                    // If a profile exists, prefill from it, otherwise keep current form inputs
+                    // This handles the case where user starts creating, then (if we add cancel) goes back, then edits again
+                    nameInput = currentProfile?.name ?: state.value.nameInput,
+                    ageInput = currentProfile?.age?.toString() ?: state.value.ageInput,
+                    selectedGender = currentProfile?.gender ?: state.value.selectedGender,
+                    bodyFatGoalInput = currentProfile?.bodyFatPercentGoal?.toString() ?: state.value.bodyFatGoalInput,
+                    photoPath = currentProfile?.photoPath ?: state.value.photoPath,
+                    showCreateProfileButton = false // Editing an existing or newly initiated profile
+                )
+            }
+            // Re-validate based on prefilled/current data
+            updateState { validateInputsInternal(this) }
+        }
+    }
+
     fun onNameChanged(name: String) {
         viewModelScope.launch {
             updateState {

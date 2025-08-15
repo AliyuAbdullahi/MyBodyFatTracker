@@ -59,4 +59,9 @@
     <string name="body_fat_goal_label">Body fat goal(%)</string>
     <string name="optional_placeholder">Gender</string>
     <string name="add_profile_photo_desc">Image</string>
+    <string name="profile_title">Profile</string>
+    <string name="profile_picture_desc">Profile Picture</string>
+    <string name="edit_profile_desc">Edit Profile</string>
+    <string name="your_goal_label">Your Goal</string>
+    <string name="not_set_placeholder">not set</string>
 </resources>
