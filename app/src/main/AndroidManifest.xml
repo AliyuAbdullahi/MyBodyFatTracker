@@ -14,6 +14,7 @@
     <!-- ... other permissions ... -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA"/>
 
+    <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
         android:allowBackup="true"
@@ -21,7 +22,7 @@
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:name=".ui.theme.BFApp"
+        android:name=".BFApp"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.BodyFatTracker"
@@ -29,8 +30,10 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:hardwareAccelerated="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.BodyFatTracker">
+            android:theme="@style/Theme.BodyFatTracker"
+            android:windowSoftInputMode="adjustResize">  <!-- I've added this line -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -38,6 +41,18 @@
             </intent-filter>
         </activity>
         <!-- Trigger Google Play services to install the backported photo picker module. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-1165826593703625~7640709842"/>
     </application>
 
 </manifest>

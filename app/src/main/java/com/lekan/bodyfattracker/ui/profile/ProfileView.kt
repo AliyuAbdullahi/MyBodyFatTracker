@@ -8,24 +8,34 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+// import androidx.compose.foundation.rememberScrollState // No longer needed here if only used by PrivacyPolicyBottomSheet
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+// import androidx.compose.foundation.verticalScroll // No longer needed here if only used by PrivacyPolicyBottomSheet
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -35,7 +45,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -46,10 +58,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+// import androidx.compose.ui.text.font.FontWeight // No longer needed here if only used by PrivacyPolicyBottomSheet
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -63,10 +77,14 @@ import coil3.request.crossfade
 import coil3.request.error
 import coil3.request.placeholder
 import com.lekan.bodyfattracker.R
+import com.lekan.bodyfattracker.model.UserProfile
 import com.lekan.bodyfattracker.ui.home.Gender
 import com.lekan.bodyfattracker.ui.home.measurement.components.GenderSelector
 import com.lekan.bodyfattracker.ui.theme.BodyFatTrackerTheme
 import java.io.File
+// import java.text.SimpleDateFormat // No longer needed here if only used by PrivacyPolicyBottomSheet
+// import java.util.Date // No longer needed here if only used by PrivacyPolicyBottomSheet
+// import java.util.Locale // No longer needed here if only used by PrivacyPolicyBottomSheet
 
 // ... ProfileScreenUiState (if in a separate file, or defined in ViewModel)
 
@@ -153,64 +171,90 @@ fun ProfileScreen(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = { // Optional: if you want a consistent TopAppBar
+    Box(modifier = Modifier.fillMaxSize()) { // Added Box to contain Scaffold and BottomSheet
+        Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            topBar = { // Optional: if you want a consistent TopAppBar
 
-        },
-        contentWindowInsets = WindowInsets(0, 0, 0, 0)
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .padding(paddingValues)
-                .fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            when {
-                uiState.isLoading -> {
-                    CircularProgressIndicator()
-                }
-                uiState.showCreateProfileButton -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        EmptyProfileView(onCreateProfileClicked = viewModel::onCreateProfileClicked)
+            },
+            contentWindowInsets = WindowInsets(0, 0, 0, 0)
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                when {
+                    uiState.isLoading -> {
+                        CircularProgressIndicator()
                     }
-                }
-                uiState.isEditing -> { // Show Form if editing or creating (after create button clicked)
-                    ProfileForm(
-                        name = uiState.nameInput,
-                        age = uiState.ageInput,
-                        bodyFatGoalInput = uiState.bodyFatGoalInput,
-                        selectedGender = uiState.selectedGender,
-                        photoPath = uiState.photoPath,
-                        onNameChange = viewModel::onNameChanged,
-                        onAgeChange = viewModel::onAgeChanged,
-                        onBodyFatGoalChange = viewModel::onBodyFatGoalChanged,
-                        onGenderSelect = viewModel::onGenderSelected,
-                        onPhotoPickerClick = {
-                            launchImagePickerWithPermissionCheck()
-                        },
-                        onSaveClicked = viewModel::saveProfile,
-                        canSave = uiState.canSave,
-                        isEditingOrCreating = true // Pass true to show save button logic
-                    )
-                }
-                uiState.userProfile != null && !uiState.isEditing -> { // Show Overview if profile exists and not editing
-                    ProfileOverview(
-                        name = uiState.userProfile!!.name, // Safe due to userProfile != null check
-                        photoPath = uiState.userProfile!!.photoPath,
-                        bodyFatGoal = uiState.userProfile!!.bodyFatPercentGoal?.let { "$it %" }
-                            ?: stringResource(R.string.not_set_placeholder),
-                        gender = uiState.userProfile!!.gender,
-                        onEditProfileClicked = viewModel::onEditProfile
-                    )
-                }
-                else -> {
-                    // Fallback, should ideally be covered by isLoading or showCreateProfileButton
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Something went wrong or no profile state.")
+
+                    uiState.showCreateProfileButton -> {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            EmptyProfileView(onCreateProfileClicked = viewModel::onCreateProfileClicked)
+                        }
+                    }
+
+                    uiState.isEditing -> { // Show Form if editing or creating (after create button clicked)
+                        ProfileForm(
+                            name = uiState.nameInput,
+                            age = uiState.ageInput,
+                            bodyFatGoalInput = uiState.bodyFatGoalInput,
+                            selectedGender = uiState.selectedGender,
+                            photoPath = uiState.photoPath,
+                            onNameChange = viewModel::onNameChanged,
+                            onAgeChange = viewModel::onAgeChanged,
+                            onBodyFatGoalChange = viewModel::onBodyFatGoalChanged,
+                            onGenderSelect = viewModel::onGenderSelected,
+                            onPhotoPickerClick = {
+                                launchImagePickerWithPermissionCheck()
+                            },
+                            onSaveClicked = viewModel::saveProfile,
+                            canSave = uiState.canSave,
+                            isEditingOrCreating = true // Pass true to show save button logic
+                        )
+                    }
+
+                    uiState.userProfile != null && !uiState.isEditing -> { // Show Overview if profile exists and not editing
+                        ProfileOverview(
+                            name = uiState.userProfile!!.name, // Safe due to userProfile != null check
+                            photoPath = uiState.userProfile!!.photoPath,
+                            bodyFatGoal = uiState.userProfile!!.bodyFatPercentGoal?.let { "$it %" }
+                                ?: stringResource(R.string.not_set_placeholder),
+                            gender = uiState.userProfile!!.gender,
+                            onEditProfileClicked = viewModel::onEditProfile,
+                            onAboutAppClicked = viewModel::onAboutAppClicked,
+                            onPrivacyPolicyClicked = viewModel::onPrivacyPolicyClicked // Updated
+                        )
+                    }
+
+                    else -> {
+                        // Fallback, should ideally be covered by isLoading or showCreateProfileButton
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("Something went wrong or no profile state.")
+                        }
                     }
                 }
             }
+        }
+
+        // About App Bottom Sheet
+        AnimatedVisibility(
+            visible = uiState.showAboutSheet,
+            enter = slideInVertically(initialOffsetY = { it }), // Slide in from bottom
+            exit = slideOutVertically(targetOffsetY = { it })  // Slide out to bottom
+        ) {
+            AboutAppBottomSheet(onDismiss = viewModel::onDismissAboutApp)
+        }
+
+        // Privacy Policy Bottom Sheet
+        AnimatedVisibility(
+            visible = uiState.showPrivacyPolicySheet,
+            enter = slideInVertically(initialOffsetY = { it }),
+            exit = slideOutVertically(targetOffsetY = { it })
+        ) {
+            PrivacyPolicyBottomSheet(onDismiss = viewModel::onDismissPrivacyPolicy)
         }
     }
 }
@@ -221,12 +265,12 @@ fun ProfileForm(
     age: String,
     bodyFatGoalInput: String,
     selectedGender: Gender?,
-    photoPath: String?, // <<< ADD photoPath
+    photoPath: String?,
     onNameChange: (String) -> Unit,
     onAgeChange: (String) -> Unit,
     onBodyFatGoalChange: (String) -> Unit,
     onGenderSelect: (Gender) -> Unit,
-    onPhotoPickerClick: () -> Unit, // <<< ADD callback for photo picker
+    onPhotoPickerClick: () -> Unit,
     onSaveClicked: () -> Unit,
     canSave: Boolean,
     isEditingOrCreating: Boolean
@@ -241,10 +285,9 @@ fun ProfileForm(
         Text(
             text = stringResource(R.string.user_profile_title),
             style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 16.dp) // Reduced bottom padding a bit
+            modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        // --- Profile Photo Picker ---
         Box(
             modifier = Modifier
                 .size(120.dp)
@@ -255,26 +298,16 @@ fun ProfileForm(
             contentAlignment = Alignment.Center
         ) {
             if (photoPath != null) {
-
-                val imageRequest = remember(photoPath) { // Rebuild request when photoPath changes
+                val imageRequest = remember(photoPath) {
                     ImageRequest.Builder(context)
-                        .data(File(photoPath)) // Coil loads from File path
+                        .data(File(photoPath))
                         .crossfade(true)
-                        .placeholder(R.drawable.camera_image) // Optional: from previous response
-                        .error(R.drawable.camera_image)       // Optional: from previous response
-                        // To bust caches more aggressively if needed, though usually not required for local files:
-                        // .memoryCacheKey(photoPath) // Use the path as memory cache key
-                        // .diskCacheKey(photoPath)   // Use the path as disk cache key
-                        // .networkCachePolicy(CachePolicy.DISABLED) // Not for local files
-                        // .diskCachePolicy(CachePolicy.DISABLED)    // Could try if still caching too aggressively
-                        // .memoryCachePolicy(CachePolicy.DISABLED)  // Could try if still caching too aggressively
+                        .placeholder(R.drawable.camera_image)
+                        .error(R.drawable.camera_image)
                         .build()
                 }
-
                 Image(
-                    painter = rememberAsyncImagePainter(
-                        model = imageRequest
-                    ),
+                    painter = rememberAsyncImagePainter(model = imageRequest),
                     contentDescription = stringResource(R.string.add_profile_photo_desc),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
@@ -289,7 +322,6 @@ fun ProfileForm(
             }
         }
         Spacer(modifier = Modifier.height(24.dp))
-        // --- End Profile Photo Picker ---
 
         OutlinedTextField(
             value = name,
@@ -354,7 +386,163 @@ fun ProfileForm(
     }
 }
 
-// ... EmptyProfileView remains the same ...
+@Composable
+fun ProfileOverview(
+    name: String,
+    photoPath: String?,
+    bodyFatGoal: String,
+    gender: Gender,
+    onEditProfileClicked: () -> Unit,
+    onAboutAppClicked: () -> Unit,
+    onPrivacyPolicyClicked: () -> Unit // Updated
+) {
+    val context = LocalContext.current
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp), // Increased padding for better spacing
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Top // Align content to the top
+    ) {
+        // Profile Image
+        Box(
+            modifier = Modifier
+                .size(150.dp) // Larger image size
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant) // Placeholder background
+                .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            if (photoPath != null) {
+                val imageRequest = remember(photoPath) { // Rebuild request when photoPath changes
+                    ImageRequest.Builder(context)
+                        .data(File(photoPath)) // Coil loads from File path
+                        .crossfade(true)
+                        .placeholder(R.drawable.camera_image)
+                        .error(R.drawable.camera_image)
+                        .build()
+                }
+                Image(
+                    painter = rememberAsyncImagePainter(model = imageRequest),
+                    contentDescription = stringResource(R.string.profile_photo_desc),
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                // Placeholder if no photo
+                Icon(
+                    painter = painterResource(R.drawable.camera_image), // Use a default person icon
+                    contentDescription = stringResource(R.string.profile_photo_desc),
+                    modifier = Modifier.size(80.dp), // Adjust size as needed
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp)) // Increased spacing
+
+        // Name
+        Text(
+            text = name,
+            style = MaterialTheme.typography.headlineSmall, // Slightly smaller headline
+            color = MaterialTheme.colorScheme.onSurface
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Gender
+        Text(
+            text = "Gender: ${gender.name.replaceFirstChar { it.uppercase() }}",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant // Subtler color
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Body Fat Goal
+        Text(
+            text = "Body Fat Goal: $bodyFatGoal",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant // Subtler color
+        )
+
+        Spacer(modifier = Modifier.weight(1f)) // Pushes buttons to the bottom
+
+        // Edit Profile Button
+        Button(
+            onClick = onEditProfileClicked,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp), // Add some vertical padding
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+        ) {
+            Text(stringResource(R.string.edit_profile_button))
+        }
+
+        // About App Button - Added
+        AboutAppButton(onClick = onAboutAppClicked)
+        PrivacyPolicyTextButton(onClick = onPrivacyPolicyClicked) // Added
+
+
+        Spacer(modifier = Modifier.height(16.dp)) // Some space at the very bottom
+    }
+}
+
+@Composable
+fun AboutAppButton(onClick: () -> Unit) {
+    TextButton(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+    ) {
+        Text("About App", color = MaterialTheme.colorScheme.secondary)
+    }
+}
+
+@Composable
+fun PrivacyPolicyTextButton(onClick: () -> Unit) {
+    TextButton(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp) // Consistent padding
+    ) {
+        Text("Privacy Policy", color = MaterialTheme.colorScheme.secondary) // Consistent styling
+    }
+}
+
+@Composable
+fun EmptyProfileView(onCreateProfileClicked: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.camera_image), // Replace with your image
+            contentDescription = stringResource(R.string.empty_profile_image_description),
+            modifier = Modifier
+                .size(200.dp) // Adjust size as needed
+                .padding(bottom = 32.dp)
+        )
+        Text(
+            text = stringResource(R.string.no_profile_yet_message),
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Text(
+            text = stringResource(R.string.create_profile_prompt),
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.padding(bottom = 24.dp)
+        )
+        Button(onClick = onCreateProfileClicked) {
+            Text(stringResource(R.string.create_profile_button_label))
+        }
+    }
+}
 
 // --- Previews (Update as needed) ---
 @Preview(showBackground = true, name = "Profile Screen - Form View (New Profile)")
@@ -373,15 +561,47 @@ fun ProfileScreenFormNewPreview() {
 @Composable
 fun ProfileScreenFormWithPhotoPreview() {
     BodyFatTrackerTheme {
-        // For preview, you won't have a real file path.
-        // You might use a placeholder drawable or skip showing an actual image in preview for file paths.
-        // Or, for a more involved preview, you could save a sample image to assets and load it.
-        // For simplicity, passing null here.
         ProfileForm(
             name = "Jane Doe", age = "30", bodyFatGoalInput = "20.5", selectedGender = Gender.FEMALE,
-            photoPath = null, // In a real scenario, this would be a file path.
+            photoPath = null, 
             onNameChange = {}, onAgeChange = {}, onBodyFatGoalChange = {}, onGenderSelect = {},
             onPhotoPickerClick = {}, onSaveClicked = {}, canSave = true, isEditingOrCreating = true
         )
+    }
+}
+
+@Preview(showBackground = true, name = "Profile Overview")
+@Composable
+fun ProfileOverviewPreview() {
+    BodyFatTrackerTheme {
+        ProfileOverview(
+            name = "John Doe",
+            photoPath = null, // Replace with a sample path or drawable for better preview
+            bodyFatGoal = "15 %",
+            gender = Gender.MALE,
+            onEditProfileClicked = {},
+            onAboutAppClicked = {},
+            onPrivacyPolicyClicked = {} // Added for preview
+        )
+    }
+}
+
+/* // Removed PrivacyPolicyBottomSheetPreview as it's now in its own file
+@Preview(showBackground = true, name = "Privacy Policy Bottom Sheet Preview")
+@Composable
+fun PrivacyPolicyBottomSheetPreview() {
+    BodyFatTrackerTheme {
+        Box(Modifier.fillMaxSize()) { // Simulate it being overlaid
+            PrivacyPolicyBottomSheet(onDismiss = {})
+        }
+    }
+}
+*/
+
+@Preview(showBackground = true, name = "Empty Profile View Preview")
+@Composable
+fun EmptyProfileViewPreview() {
+    BodyFatTrackerTheme {
+        EmptyProfileView(onCreateProfileClicked = {})
     }
 }

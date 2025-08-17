@@ -4,6 +4,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.imePadding // Added import
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -72,7 +73,7 @@ fun ThreeSitesMeasureInput(
     val site3Focus = remember { FocusRequester() }
 
     val isFormComplete = age.isNotBlank() &&
-            // selectedGender != Gender.NONE && // Assuming Gender doesn't have a NONE state based on new default
+            // selectedGender != Gender.NONE && // Assuming Gender doesn'''t have a NONE state based on new default
             chestSkinfold.isNotBlank() &&
             abdomenSkinfold.isNotBlank() &&
             thighSkinfold.isNotBlank()
@@ -135,6 +136,7 @@ fun ThreeSitesMeasureInput(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
+            .imePadding() // Added imePadding
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

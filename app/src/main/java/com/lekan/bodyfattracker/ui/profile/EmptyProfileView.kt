@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 import com.lekan.bodyfattracker.R
 
 @Composable
-fun EmptyProfileView(onCreateProfileClicked: () -> Unit) {
+fun EmptyProfileView(onCreateProfileClicked: () -> Unit, onAboutClickedAppClicked: () -> Unit) {
     Column(
         modifier = Modifier.Companion
             .fillMaxSize()
@@ -35,5 +35,7 @@ fun EmptyProfileView(onCreateProfileClicked: () -> Unit) {
         Button(onClick = onCreateProfileClicked) {
             Text(stringResource(R.string.create_profile_button))
         }
+        AboutAppButton(onAboutClickedAppClicked  = onAboutClickedAppClicked)
     }
 }
+

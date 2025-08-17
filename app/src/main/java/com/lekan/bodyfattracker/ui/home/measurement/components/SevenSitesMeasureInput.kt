@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding // Added import
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
@@ -98,7 +99,7 @@ fun SevenSitesMeasureInput(
     ) {
         // For 7-site, the sites are often the same labels for male and female,
         // but the image or exact measurement technique might differ subtly.
-        // We'll primarily differentiate by image if needed.
+        // We'''ll primarily differentiate by image if needed.
         // If the sites themselves differ significantly, adjust the data class or logic.
 
         val maleSites = listOf(
@@ -137,6 +138,7 @@ fun SevenSitesMeasureInput(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
+            .imePadding() // Added imePadding
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

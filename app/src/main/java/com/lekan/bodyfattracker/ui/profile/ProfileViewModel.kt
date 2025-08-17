@@ -29,7 +29,9 @@ data class ProfileScreenUiState(
     val showCreateProfileButton: Boolean = false,
     val canSave: Boolean = false,
     val errorMessage: String? = null,
-    val profileSavedSuccessfully: Boolean = false
+    val profileSavedSuccessfully: Boolean = false,
+    val showAboutSheet: Boolean = false, // Added for About App bottom sheet
+    val showPrivacyPolicySheet: Boolean = false // Added for Privacy Policy bottom sheet
 )
 
 @HiltViewModel
@@ -253,7 +255,6 @@ class ProfileViewModel @Inject constructor(
                     currentState.selectedGender != currentState.userProfile.gender ||
                     (currentState.bodyFatGoalInput.toDoubleOrNull()
                         ?: -1.0) != (currentState.userProfile.bodyFatPercentGoal ?: -1.0) ||
-                    (currentState.bodyFatGoalInput.isEmpty() != (currentState.userProfile.bodyFatPercentGoal == null)) ||
                     currentState.photoPath != currentState.userProfile.photoPath // <<< CHECK photoPath change
         }
 
@@ -351,5 +352,30 @@ class ProfileViewModel @Inject constructor(
             updateState { copy(errorMessage = message) }
         }
     }
-}
 
+    // --- About App Bottom Sheet ---
+    fun onAboutAppClicked() {
+        viewModelScope.launch {
+            updateState { copy(showAboutSheet = true) }
+        }
+    }
+
+    fun onDismissAboutApp() {
+        viewModelScope.launch {
+            updateState { copy(showAboutSheet = false) }
+        }
+    }
+
+    // --- Privacy Policy Bottom Sheet ---
+    fun onPrivacyPolicyClicked() {
+        viewModelScope.launch {
+            updateState { copy(showPrivacyPolicySheet = true) }
+        }
+    }
+
+    fun onDismissPrivacyPolicy() {
+        viewModelScope.launch {
+            updateState { copy(showPrivacyPolicySheet = false) }
+        }
+    }
+}

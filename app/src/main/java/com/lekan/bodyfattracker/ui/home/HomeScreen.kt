@@ -1,5 +1,6 @@
 package com.lekan.bodyfattracker.ui.home
 
+import AdmobBanner
 import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
@@ -57,6 +58,7 @@ fun HomeScreen(
         HomeView(
             lastInfo = state.bodyFatInfo,
             name = state.userName,
+            goal = state.bodyFatGoal,
             onStartThreeSites = onStartThreeSites,
             onStartSevenSites = onStartSevenSites,
             onGuestClicked = {
@@ -90,7 +92,7 @@ fun HomeScreen(
                 )
             }
         }
-
+        AdmobBanner(modifier = Modifier.fillMaxWidth().align(Alignment.BottomCenter))
         AnimatedVisibility(visible = state.isTakingGuestMeasurement) {
             GuestMeasurementCard(
                 onClose = {
@@ -211,7 +213,8 @@ fun GuestMeasurementCard(
         ) {
             Column(
                 modifier = Modifier
-                    .padding(16.dp)
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp, vertical = 16.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(White)
                     .clickable(interactionSource = null, indication = null) {}

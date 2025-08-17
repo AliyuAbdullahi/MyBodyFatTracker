@@ -12,8 +12,8 @@
     <string name="three_sites_info">The three-site skinfold test is a method to estimate body fat percentage using skinfold measurements at three specific locations. For men, the common sites are the chest, abdomen, and thigh. For women, the common sites are the triceps, suprailiac, and thigh. The measurements are taken using skinfold calipers and then plugged into gender-specific equations to calculate body density, which is then converted to body fat percentage. </string>
     <string name="seven_sites_info">The seven-site skinfold measurement method for assessing body fat involves using calipers to measure subcutaneous fat thickness at specific locations on the body. These locations are the triceps, biceps, subscapular, supraspinale (or suprailiac), abdominal, thigh, and chest. These measurements, when combined, can provide an estimation of overall body fat percentage. It offers slightly better accuracy than three sites skinfold measurement.</string>
     <string name="guest_info">Your measurement will not be saved.</string>
-    <string name="three_sites_accuracy">±3.5% to 5% accuracy</string>
-    <string name="seven_sites_accuracy">±3.5% accuracy</string>
+    <string name="three_sites_accuracy">±3.5% to 5% error margin</string>
+    <string name="seven_sites_accuracy">±3.5% error margin</string>
     <string name="gender_label">Gender</string>
     <string name="calculate_button_label">Calculate</string>
     <string name="female_gender_label">Female</string>
@@ -56,12 +56,56 @@
     <string name="user_profile_title">User Profile</string>
     <string name="create_profile_button">Create Profile</string>
     <string name="no_profile_yet_message">You do not have a profile yet.</string>
+    <string name="empty_profile_image_description">No profile image</string>
     <string name="body_fat_goal_label">Body fat goal(%)</string>
     <string name="optional_placeholder">Gender</string>
     <string name="add_profile_photo_desc">Image</string>
+    <string name="profile_photo_desc">Profile Photo</string>
+    <string name="edit_profile_button">Edit Profile</string>
+    <string name="close_button_desc">Close Button</string>
     <string name="profile_title">Profile</string>
     <string name="profile_picture_desc">Profile Picture</string>
+    <string name="create_profile_button_label">Create Profile</string>
+    <string name="create_profile_prompt">When you create a profile, you will see your profile here</string>
     <string name="edit_profile_desc">Edit Profile</string>
     <string name="your_goal_label">Your Goal</string>
     <string name="not_set_placeholder">not set</string>
+    <string name="goal_progress_percentage">%1$d percent reached</string>
+    <string name="your_bf_goal_label">Body fat goal : %1$d percent</string>
+    <string name="share">Share</string>
+    <string name="i_am_sharing_my_body_fat_percentage_with_you">I am sharing my body fat percentage with you!</string>
+    <string name="share_via">Share via</string>
+    <string name="about_app">About App</string>
+    <string name="about_app_content">MyBodyFatTracker allows you to calculate bodyfat your body fat percentage using skinfold measurements at three specific locations. For men, the common sites are the chest, abdomen, and thigh. For women, the common sites are the triceps, suprailiac, and thigh. The measurements are taken using skinfold calipers and then plugged into gender-specific equations to calculate body density, which is then converted to body fat percentage.</string>
+
+    <!-- For Privacy Policy Bottom Sheet -->
+    <string name="privacy_policy_title">Privacy Policy</string>
+    <string name="privacy_policy_last_updated">Last Updated: %1$s</string>
+
+    <string name="privacy_policy_intro_title">Introduction</string>
+    <string name="privacy_policy_intro_content">Welcome to BodyFatTracker. We are committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard your information when you use our mobile application.</string>
+
+    <string name="privacy_policy_info_collect_title">Information We Collect</string>
+    <string name="privacy_policy_info_collect_content">We may collect the following information, which is stored locally on your device:\n- Personal Identification Information: Name, age, gender.\n- Body Measurement Data: Skinfold measurements, body fat percentage results, and related calculations.\n- Profile Photo: If you choose to provide one.</string>
+
+    <string name="privacy_policy_how_use_title">How We Use Your Information</string>
+    <string name="privacy_policy_how_use_content">We use the information we collect solely to:\n- Provide and personalize the app\'s features (e.g., calculate body fat, display history).\n- Allow you to track your progress over time.\nAll processing and calculations are performed locally on your device.</string>
+
+    <string name="privacy_policy_storage_security_title">Data Storage and Security</string>
+    <string name="privacy_policy_storage_security_content">All your personal information and measurement data are stored locally on your device within the application\'s private storage. We take reasonable measures to protect your data, but please be aware that no method of electronic storage is 100% secure. If you uninstall the app, this data may be removed, unless backed up by your device\'s operating system features.</string>
+
+    <string name="privacy_policy_sharing_title">Data Sharing</string>
+    <string name="privacy_policy_sharing_content">We do not share your personal data with any third parties. Your data remains on your device and is not transmitted to us or any external servers.</string>
+
+    <string name="privacy_policy_rights_title">Your Rights</string>
+    <string name="privacy_policy_rights_content">Since your data is stored locally, you have full control over it. You can:\n- Access and review your data within the app.\n- Modify your profile information and measurements directly in the app.\n- Delete your profile data by clearing app data through your device settings or uninstalling the application.</string>
+
+    <string name="privacy_policy_children_title">Children\'s Privacy</string>
+    <string name="privacy_policy_children_content">Our application is not intended for use by children under the age of 13 (or the relevant age in your jurisdiction). We do not knowingly collect personal information from children. If we become aware that a child has provided us with personal information, we will take steps to remove such information.</string>
+
+    <string name="privacy_policy_changes_title">Changes to This Privacy Policy</string>
+    <string name="privacy_policy_changes_content">We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy within the app. You are advised to review this Privacy Policy periodically for any changes.</string>
+
+    <string name="privacy_policy_contact_title">Contact Us</string>
+    <string name="privacy_policy_contact_content">If you have any questions about this Privacy Policy, please contact us at [Your Support Email or Contact Method Here].</string>
 </resources>

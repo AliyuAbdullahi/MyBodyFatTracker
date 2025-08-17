@@ -20,7 +20,13 @@ class HomeViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            updateState { copy(userName = profileRepository.getProfile()?.name) }
+            updateState {
+                copy(
+                    userName = profileRepository.getProfile()?.name,
+                    bodyFatGoal = profileRepository.getProfile()?.bodyFatPercentGoal,
+                    gender = profileRepository.getProfile()?.gender
+                )
+            }
         }
     }
 
@@ -28,7 +34,9 @@ class HomeViewModel @Inject constructor(
         val bodyFatInfo: BodyFatInfo? = null,
         val info: String? = null,
         val isTakingGuestMeasurement: Boolean = false,
-        val userName: String? = null
+        val userName: String? = null,
+        val bodyFatGoal: Int? = null,
+        val gender: Gender? = null
     )
 
     fun update() {

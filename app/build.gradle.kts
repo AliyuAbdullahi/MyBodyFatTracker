@@ -65,6 +65,8 @@ dependencies {
 
     implementation(libs.coil)
 
+    implementation(libs.ads)
+
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

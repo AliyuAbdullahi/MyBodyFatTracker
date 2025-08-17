@@ -2,12 +2,15 @@ package com.lekan.bodyfattracker.ui.home.components
 
 import InfoRow
 import NoMeasurementComponent
+import UserInfoOverview
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,6 +36,7 @@ import com.lekan.bodyfattracker.ui.theme.OnSecondary
 fun HomeView(
     lastInfo: BodyFatInfo?,
     name: String? = null,
+    goal: Int? = null,
     onStartThreeSites: () -> Unit = {},
     onStartSevenSites: () -> Unit = {},
     onThreeSitesMoreInfo: () -> Unit = {},
@@ -41,8 +45,11 @@ fun HomeView(
     onGuestInfoClicked: () -> Unit = {}
 ) {
     Column(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
     ) {
+
         Text(stringResource(R.string.welcome_message, name.orEmpty()), modifier = Modifier.padding(16.dp), fontSize = 24.sp)
         Spacer(modifier = Modifier.height(16.dp))
         if (lastInfo == null) { // Changed condition to correctly show NoMeasurementComponent
@@ -63,11 +70,13 @@ fun HomeView(
                 else -> Error
             }
             UserInfoOverview(
-                bodyFat = stringResource(R.string.percentage_integer_format, lastInfo.percentage),
-                labelColor = color,
+                bodyFatPercentageString = stringResource(R.string.percentage_integer_format, lastInfo.percentage),
+                bodyFatLabelColor = color,
                 date = lastInfo.date,
                 circleColor = Grey700,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                currentBodyFatValue = lastInfo.percentage,
+                bodyFatGoalValue = goal
             )
         }
 
