@@ -66,6 +66,12 @@ dependencies {
     implementation(libs.coil)
 
     implementation(libs.ads)
+    implementation(libs.chartCore)
+    implementation(libs.chartCompose)
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    implementation(libs.datastore)
+    ksp(libs.room.compiler)
 
 
     testImplementation(libs.junit)
