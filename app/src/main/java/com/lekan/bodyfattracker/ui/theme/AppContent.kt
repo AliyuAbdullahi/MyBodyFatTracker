@@ -25,7 +25,7 @@ import androidx.navigation3.runtime.rememberSavedStateNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import androidx.navigation3.ui.rememberSceneSetupNavEntryDecorator
 import com.lekan.bodyfattracker.ui.addweight.AddWeightEntryScreen
-import com.lekan.bodyfattracker.ui.history.HistoryView
+import com.lekan.bodyfattracker.ui.history.HistoryScreen
 import com.lekan.bodyfattracker.ui.home.HomeScreen
 import com.lekan.bodyfattracker.ui.home.measurement.screens.SevenSitesMeasurementScreen
 import com.lekan.bodyfattracker.ui.home.measurement.screens.ThreeSitesMeasurementScreen
@@ -88,7 +88,7 @@ fun AppContent(
                             }
                         )
                     }
-                    entry<Screen.History> { HistoryView() }
+                    entry<Screen.History> { HistoryScreen() }
                     entry<Screen.Profile> { ProfileScreen() }
                     entry<Screen.ThreeSitesMeasurement> { navKey ->
                         ThreeSitesMeasurementScreen(

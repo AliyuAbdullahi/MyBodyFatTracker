@@ -115,4 +115,18 @@
     <string name="start_tracking_invitation">Take some measurements and track your progress!</string>
     <string name="delete_action">Delete Action</string>
     <string name="your_measurement_history">Your measurement History</string>
+    <string name="date_header_today">Today</string>
+    <string name="date_header_yesterday">Yesterday</string>
+    <string name="filter_selected_icon_desc">filter done</string>
+    <string name="filter_weight">Weight</string>
+    <string name="filter_body_fat">Body fat</string>
+    <string name="filter_all">All</string>
+    <string name="sort_action_desc">Sort Action</string>
+    <string name="confirm_delete_title">Item Delete</string>
+    <string name="confirm_delete_measurement_message_format">Are you sure you want to delete this measurement?</string>
+    <string name="confirm_delete_weight_message_format">Are you sure you want to delete this weight measurement?</string>
+    <string name="confirm_delete_generic_message">Are you sure you want to delete this item?</string>
+    <string name="confirm_delete_are_you_sure">Are you sure you want to delete this item?</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_cancel">Cancel</string>
 </resources>

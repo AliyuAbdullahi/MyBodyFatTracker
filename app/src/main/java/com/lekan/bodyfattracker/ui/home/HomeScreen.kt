@@ -1,5 +1,7 @@
 package com.lekan.bodyfattracker.ui.home
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
@@ -48,6 +50,7 @@ import com.lekan.bodyfattracker.model.WeightEntry // Required for the new parame
 import com.lekan.bodyfattracker.ui.home.components.LatestMeasurementCard
 import com.lekan.bodyfattracker.ui.home.components.LatestWeightEntryCard
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
@@ -71,7 +74,8 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Body Fat Tracker") }, windowInsets = WindowInsets(0),)
+            TopAppBar(title = { Text("Body Fat Tracker") },
+                windowInsets = WindowInsets(0),)
         },
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         floatingActionButton = {

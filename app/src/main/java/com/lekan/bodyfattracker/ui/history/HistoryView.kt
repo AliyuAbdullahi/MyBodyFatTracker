@@ -1,5 +1,6 @@
 package com.lekan.bodyfattracker.ui.history
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -14,25 +15,32 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items // Ensure this is the correct items import
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Percent
+import androidx.compose.material3.AlertDialog // Added
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.ExperimentalMaterial3Api // Added for SwipeToDismissBox
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SwipeToDismissBox // Added
-import androidx.compose.material3.SwipeToDismissBoxState // Added
-import androidx.compose.material3.SwipeToDismissBoxValue // Added
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxState
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberSwipeToDismissBoxState // Added
+import androidx.compose.material3.TextButton // Added
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -47,36 +55,42 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.lekan.bodyfattracker.R
 import com.lekan.bodyfattracker.model.BodyFatMeasurement
+import com.lekan.bodyfattracker.model.MeasurementMethod
 import com.lekan.bodyfattracker.model.WeightEntry
+import com.lekan.bodyfattracker.model.WeightUnit
 import com.lekan.bodyfattracker.ui.theme.BodyFatTrackerTheme
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-@OptIn(
-    ExperimentalFoundationApi::class,
-    ExperimentalMaterial3Api::class
-) // Added ExperimentalMaterial3Api
 @Composable
-fun HistoryView(
+fun HistoryScreen(
     viewModel: HistoryViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-
     HistoryViewContent(
         uiState = uiState,
-        onDeleteMeasurement = { viewModel.deleteMeasurement(it) },
-        onDeleteWeightEntry = { viewModel.deleteWeightEntry(it) }
+        onSetFilter = viewModel::setFilter,
+        onSetSortOption = viewModel::setSortOption,
+        onRequestDeleteConfirmation = viewModel::requestDeleteConfirmation, // Updated
+        onConfirmPendingDelete = viewModel::confirmPendingDelete,       // Updated
+        onCancelDeleteConfirmation = viewModel::cancelDeleteConfirmation  // Updated
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryViewContent(
     uiState: HistoryUiState,
-    onDeleteMeasurement: (Long) -> Unit,
-    onDeleteWeightEntry: (Long) -> Unit
+    onSetFilter: (HistoryFilterOption) -> Unit,
+    onSetSortOption: (HistorySortOption) -> Unit,
+    onRequestDeleteConfirmation: (HistoryListItem) -> Unit, // Renamed/Updated
+    onConfirmPendingDelete: () -> Unit,               // Renamed/Updated
+    onCancelDeleteConfirmation: () -> Unit,           // Renamed/Updated
+    modifier: Modifier = Modifier
 ) {
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = modifier.fillMaxSize()) {
         Text(
             text = stringResource(R.string.your_measurement_history),
             style = MaterialTheme.typography.headlineMedium,
@@ -86,15 +100,95 @@ fun HistoryViewContent(
                 .fillMaxWidth()
                 .padding(16.dp)
         )
-        Spacer(modifier = Modifier.height(16.dp))
-        Box(
+
+        Row(
             modifier = Modifier
-                .weight(1f)
-                .fillMaxSize()
-        ) { // Added weight(1f) to Box
-            if (uiState.isLoading) {
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            HistoryFilterOption.entries.forEach { filterOption ->
+                FilterChip(
+                    selected = uiState.selectedFilter == filterOption,
+                    onClick = { onSetFilter(filterOption) },
+                    label = {
+                        Text(
+                            when (filterOption) {
+                                HistoryFilterOption.ALL -> stringResource(R.string.filter_all)
+                                HistoryFilterOption.BODY_FAT -> stringResource(R.string.filter_body_fat)
+                                HistoryFilterOption.WEIGHT -> stringResource(R.string.filter_weight)
+                            }
+                        )
+                    },
+                    leadingIcon = if (uiState.selectedFilter == filterOption) {
+                        {
+                            Icon(
+                                imageVector = Icons.Filled.Done,
+                                contentDescription = stringResource(R.string.filter_selected_icon_desc),
+                                modifier = Modifier.size(FilterChipDefaults.IconSize)
+                            )
+                        }
+                    } else {
+                        null
+                    }
+                )
+            }
+
+            Spacer(Modifier.weight(1f))
+
+            IconButton(onClick = {
+                val newSortOption = if (uiState.selectedSortOption == HistorySortOption.NEWEST_FIRST) {
+                    HistorySortOption.OLDEST_FIRST
+                } else {
+                    HistorySortOption.NEWEST_FIRST
+                }
+                onSetSortOption(newSortOption)
+            }) {
+                Icon(
+                    imageVector = if (uiState.selectedSortOption == HistorySortOption.NEWEST_FIRST) {
+                        Icons.Filled.ArrowDownward
+                    } else {
+                        Icons.Filled.ArrowUpward
+                    },
+                    contentDescription = stringResource(R.string.sort_action_desc)
+                )
+            }
+        }
+
+        if (uiState.showConfirmDeleteDialog) {
+            AlertDialog(
+                onDismissRequest = { onCancelDeleteConfirmation() },
+                title = { Text(text = stringResource(R.string.confirm_delete_title)) },
+                text = {
+                    val itemDescription = when (val item = uiState.itemPendingDelete) {
+                        is HistoryListItem.MeasurementItem ->
+                            stringResource(R.string.confirm_delete_measurement_message_format, String.format(Locale.US, "%.1f%%", item.measurement.percentage))
+                        is HistoryListItem.WeightItem ->
+                            stringResource(R.string.confirm_delete_weight_message_format, String.format(Locale.US, "%.1f", item.entry.weight), item.entry.unit.name.lowercase(Locale.getDefault()))
+                        null -> "" // Should ideally not happen if dialog is shown
+                        else -> stringResource(id = R.string.confirm_delete_generic_message)
+                    }
+                    Text(text = stringResource(R.string.confirm_delete_are_you_sure, itemDescription))
+                },
+                confirmButton = {
+                    TextButton(onClick = { onConfirmPendingDelete() }) {
+                        Text(stringResource(R.string.action_delete))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { onCancelDeleteConfirmation() }) {
+                        Text(stringResource(R.string.action_cancel))
+                    }
+                }
+            )
+        }
+
+
+        Box(modifier = Modifier.weight(1f).fillMaxSize()) {
+            if (uiState.isLoading && !uiState.showConfirmDeleteDialog) { // Don't show loader if dialog is up
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else if (uiState.groupedHistoryItems.isEmpty()) {
+            } else if (uiState.groupedHistoryItems.isEmpty() && !uiState.isLoading) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -130,7 +224,7 @@ fun HistoryViewContent(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(vertical = 8.dp) // Adjusted padding, horizontal on sticky header/items
+                    contentPadding = PaddingValues(vertical = 8.dp)
                 ) {
                     uiState.groupedHistoryItems.entries.toList().forEach { dateGroup ->
                         stickyHeader {
@@ -138,7 +232,7 @@ fun HistoryViewContent(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.97f))
-                                    .padding(horizontal = 16.dp) // Horizontal padding for sticky header
+                                    .padding(horizontal = 16.dp)
                             ) {
                                 Text(
                                     text = dateGroup.key,
@@ -158,48 +252,37 @@ fun HistoryViewContent(
                                     is HistoryListItem.WeightItem -> "wt-${item.entry.id}"
                                 }
                             },
-                            // contentType = { item -> item.javaClass } // Optional: for performance
                         ) { historyItem ->
                             val dismissState = rememberSwipeToDismissBoxState(
                                 confirmValueChange = { dismissValue ->
                                     if (dismissValue == SwipeToDismissBoxValue.EndToStart) {
-                                        when (historyItem) {
-                                            is HistoryListItem.MeasurementItem -> {
-                                                onDeleteMeasurement(historyItem.measurement.id)
-                                                true
-                                            }
-
-                                            is HistoryListItem.WeightItem -> {
-                                                onDeleteWeightEntry(historyItem.entry.id)
-                                                true
-                                            }
-                                        }
+                                        onRequestDeleteConfirmation(historyItem) // Updated
+                                        true // Indicate that the dismiss has been handled (dialog will show)
                                     } else {
                                         false
                                     }
-                                }
+                                },
+                                // positionalThreshold = { it * .25f } // Optional: to make swipe easier/harder
                             )
 
                             SwipeToDismissBox(
                                 state = dismissState,
-                                enableDismissFromStartToEnd = false, // Only swipe from right to left
+                                enableDismissFromStartToEnd = false,
                                 backgroundContent = { SwipeBackground(dismissState = dismissState) },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 16.dp) // Horizontal padding for items
-                                    .animateItem()
+                                    .padding(horizontal = 16.dp)
+                                    .animateContentSize() // Animate item appearance/disappearance
                             ) {
-                                // Column wrapper for consistent padding, as cards might have their own.
-                                Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                                Column(modifier = Modifier.padding(vertical = 8.dp)) { // Padding for cards
                                     when (historyItem) {
                                         is HistoryListItem.MeasurementItem -> MeasurementHistoryCard(
                                             measurement = historyItem.measurement,
-                                            onDelete = { onDeleteMeasurement(historyItem.measurement.id) }
+                                            onDelete = { onRequestDeleteConfirmation(historyItem) } // Updated
                                         )
-
                                         is HistoryListItem.WeightItem -> WeightHistoryCard(
                                             entry = historyItem.entry,
-                                            onDelete = { onDeleteWeightEntry(historyItem.entry.id) }
+                                            onDelete = { onRequestDeleteConfirmation(historyItem) } // Updated
                                         )
                                     }
                                 }
@@ -215,21 +298,20 @@ fun HistoryViewContent(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SwipeBackground(dismissState: SwipeToDismissBoxState) {
-    val color =
-        when (dismissState.targetValue) { // Use targetValue for a more responsive background
-            SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.errorContainer
-            else -> Color.Transparent
-        }
+    val color = when (dismissState.targetValue) {
+        SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.errorContainer
+        else -> Color.Transparent
+    }
     val alignment = Alignment.CenterEnd
 
     Box(
         Modifier
             .fillMaxSize()
             .background(color)
-            .padding(horizontal = 20.dp), // Padding for the icon inside background
+            .padding(horizontal = 20.dp),
         contentAlignment = alignment
     ) {
-        if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart) { // Show icon only when swiping to delete
+        if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart) {
             Icon(
                 Icons.Filled.Delete,
                 contentDescription = stringResource(R.string.delete_action),
@@ -238,7 +320,6 @@ private fun SwipeBackground(dismissState: SwipeToDismissBoxState) {
         }
     }
 }
-
 
 @Composable
 fun MeasurementHistoryCard(
@@ -255,7 +336,7 @@ fun MeasurementHistoryCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 16.dp, top = 16.dp, bottom = 16.dp, end = 8.dp),
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
@@ -281,7 +362,7 @@ fun MeasurementHistoryCard(
                 )
             }
             IconButton(
-                onClick = onDelete,
+                onClick = onDelete, // This now calls onRequestDeleteConfirmation via parameter
                 modifier = Modifier.size(40.dp)
             ) {
                 Icon(
@@ -309,7 +390,7 @@ fun WeightHistoryCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 16.dp, top = 16.dp, bottom = 16.dp, end = 8.dp),
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
@@ -320,13 +401,7 @@ fun WeightHistoryCard(
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Weight: ${
-                        String.format(
-                            Locale.US,
-                            "%.1f",
-                            entry.weight
-                        )
-                    } ${entry.unit.name}",
+                    text = "Weight: ${String.format(Locale.US, "%.1f", entry.weight)} ${entry.unit.name}",
                     style = MaterialTheme.typography.titleMedium
                 )
                 Spacer(modifier = Modifier.height(4.dp))
@@ -343,7 +418,7 @@ fun WeightHistoryCard(
                 )
             }
             IconButton(
-                onClick = onDelete,
+                onClick = onDelete, // This now calls onRequestDeleteConfirmation via parameter
                 modifier = Modifier.size(40.dp)
             ) {
                 Icon(
@@ -356,20 +431,83 @@ fun WeightHistoryCard(
     }
 }
 
+
+@Preview(showBackground = true, name = "History - Populated (Dialog Hidden)")
+@Composable
+fun HistoryViewPreview_Populated_DialogHidden() {
+    HistoryViewPreview_Populated_WithDialogState(showDialog = false, itemIsMeasurement = true)
+}
+
+@Preview(showBackground = true, name = "History - Populated (Dialog Shown - Measurement)")
+@Composable
+fun HistoryViewPreview_Populated_DialogShown_Measurement() {
+    HistoryViewPreview_Populated_WithDialogState(showDialog = true, itemIsMeasurement = true)
+}
+
+@Preview(showBackground = true, name = "History - Populated (Dialog Shown - Weight)")
+@Composable
+fun HistoryViewPreview_Populated_DialogShown_Weight() {
+    HistoryViewPreview_Populated_WithDialogState(showDialog = true, itemIsMeasurement = false)
+}
+
+
+@Composable
+private fun HistoryViewPreview_Populated_WithDialogState(showDialog: Boolean, itemIsMeasurement: Boolean) {
+    BodyFatTrackerTheme {
+        val sampleTime = System.currentTimeMillis()
+        val measurementItem = HistoryListItem.MeasurementItem(BodyFatMeasurement(1L, sampleTime - 100000L, 10.0, MeasurementMethod.SEVEN_POINTS, ))
+        val weightItem = HistoryListItem.WeightItem(WeightEntry(1L, 75.5, WeightUnit.KG, sampleTime - 50000L, "Morning weigh-in"))
+
+        val allItems = listOf(measurementItem, weightItem).sortedByDescending { it.timestamp }
+        val groupedItems = allItems.groupBy { item -> DateUtils.formatHeaderDate(item.timestamp) }
+
+        val sampleUiState = HistoryUiState(
+            isLoading = false,
+            historyItems = allItems,
+            groupedHistoryItems = groupedItems,
+            error = null,
+            selectedFilter = HistoryFilterOption.ALL,
+            selectedSortOption = HistorySortOption.NEWEST_FIRST,
+            itemPendingDelete = if (showDialog) (if (itemIsMeasurement) measurementItem else weightItem) else null,
+            showConfirmDeleteDialog = showDialog
+        )
+        HistoryViewContent(
+            uiState = sampleUiState,
+            onSetFilter = {},
+            onSetSortOption = {},
+            onRequestDeleteConfirmation = {},
+            onConfirmPendingDelete = {},
+            onCancelDeleteConfirmation = {}
+        )
+    }
+}
+
+
+object DateUtils {
+    fun isToday(timestamp: Long): Boolean = android.text.format.DateUtils.isToday(timestamp)
+    fun isYesterday(timestamp: Long): Boolean {
+        val yesterday = Calendar.getInstance(); yesterday.add(Calendar.DAY_OF_YEAR, -1)
+        val cal = Calendar.getInstance(); cal.timeInMillis = timestamp
+        return yesterday.get(Calendar.YEAR) == cal.get(Calendar.YEAR) &&
+                yesterday.get(Calendar.DAY_OF_YEAR) == cal.get(Calendar.DAY_OF_YEAR)
+    }
+    fun formatHeaderDate(timestamp: Long, locale: Locale = Locale.getDefault()): String {
+        return when {
+            isToday(timestamp) -> "Today" // Consider using stringResource(R.string.date_header_today)
+            isYesterday(timestamp) -> "Yesterday" // Consider using stringResource(R.string.date_header_yesterday)
+            else -> SimpleDateFormat("MMM dd, yyyy", locale).format(Date(timestamp))
+        }
+    }
+}
+
 @Preview(showBackground = true, name = "History View - Empty")
 @Composable
 fun HistoryViewPreview_Empty() {
     BodyFatTrackerTheme {
-        val sampleUiState = HistoryUiState(
-            isLoading = false,
-            historyItems = emptyList(),
-            groupedHistoryItems = emptyMap(),
-            error = null
-        )
         HistoryViewContent(
-            uiState = sampleUiState,
-            onDeleteMeasurement = { },
-            onDeleteWeightEntry = { }
+            uiState = HistoryUiState(isLoading = false, groupedHistoryItems = emptyMap()),
+            onSetFilter = {}, onSetSortOption = {},
+            onRequestDeleteConfirmation = {}, onConfirmPendingDelete = {}, onCancelDeleteConfirmation = {}
         )
     }
 }
@@ -378,11 +516,10 @@ fun HistoryViewPreview_Empty() {
 @Composable
 fun HistoryViewPreview_Loading() {
     BodyFatTrackerTheme {
-        val sampleUiState = HistoryUiState(isLoading = true)
         HistoryViewContent(
-            uiState = sampleUiState,
-            onDeleteMeasurement = { },
-            onDeleteWeightEntry = { }
+            uiState = HistoryUiState(isLoading = true),
+            onSetFilter = {}, onSetSortOption = {},
+            onRequestDeleteConfirmation = {}, onConfirmPendingDelete = {}, onCancelDeleteConfirmation = {}
         )
     }
 }
