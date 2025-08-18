@@ -24,7 +24,7 @@ import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Percent
-import androidx.compose.material3.AlertDialog // Added
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
@@ -39,7 +39,7 @@ import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxState
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton // Added
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -58,6 +58,7 @@ import com.lekan.bodyfattracker.model.BodyFatMeasurement
 import com.lekan.bodyfattracker.model.MeasurementMethod
 import com.lekan.bodyfattracker.model.WeightEntry
 import com.lekan.bodyfattracker.model.WeightUnit
+import com.lekan.bodyfattracker.ui.core.ui.ProgressChart // Added import for ProgressChart
 import com.lekan.bodyfattracker.ui.theme.BodyFatTrackerTheme
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -73,9 +74,9 @@ fun HistoryScreen(
         uiState = uiState,
         onSetFilter = viewModel::setFilter,
         onSetSortOption = viewModel::setSortOption,
-        onRequestDeleteConfirmation = viewModel::requestDeleteConfirmation, // Updated
-        onConfirmPendingDelete = viewModel::confirmPendingDelete,       // Updated
-        onCancelDeleteConfirmation = viewModel::cancelDeleteConfirmation  // Updated
+        onRequestDeleteConfirmation = viewModel::requestDeleteConfirmation,
+        onConfirmPendingDelete = viewModel::confirmPendingDelete,
+        onCancelDeleteConfirmation = viewModel::cancelDeleteConfirmation
     )
 }
 
@@ -85,9 +86,9 @@ fun HistoryViewContent(
     uiState: HistoryUiState,
     onSetFilter: (HistoryFilterOption) -> Unit,
     onSetSortOption: (HistorySortOption) -> Unit,
-    onRequestDeleteConfirmation: (HistoryListItem) -> Unit, // Renamed/Updated
-    onConfirmPendingDelete: () -> Unit,               // Renamed/Updated
-    onCancelDeleteConfirmation: () -> Unit,           // Renamed/Updated
+    onRequestDeleteConfirmation: (HistoryListItem) -> Unit,
+    onConfirmPendingDelete: () -> Unit,
+    onCancelDeleteConfirmation: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxSize()) {
@@ -100,6 +101,54 @@ fun HistoryViewContent(
                 .fillMaxWidth()
                 .padding(16.dp)
         )
+
+        // Charts Section
+        if (uiState.bodyFatChartEntries.isNotEmpty() || uiState.weightChartEntries.isNotEmpty()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .animateContentSize(), // Animate appearance/disappearance of chart section
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                if (uiState.bodyFatChartEntries.isNotEmpty()) {
+                    Text(
+                        text = stringResource(R.string.body_fat_trend_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                    ProgressChart(
+                        entries = uiState.bodyFatChartEntries,
+                        yAxisTitle = "%",
+                        lineColor = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp) // Adjusted height
+                    )
+                }
+
+                if (uiState.weightChartEntries.isNotEmpty()) {
+                    Text(
+                        text = stringResource(R.string.weight_trend_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(
+                            top = if (uiState.bodyFatChartEntries.isNotEmpty()) 8.dp else 0.dp,
+                            bottom = 4.dp
+                        )
+                    )
+                    ProgressChart(
+                        entries = uiState.weightChartEntries,
+                        yAxisTitle = "Weight", // Using a generic title for now
+                        lineColor = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp) // Adjusted height
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
 
         Row(
             modifier = Modifier
@@ -134,15 +183,14 @@ fun HistoryViewContent(
                     }
                 )
             }
-
             Spacer(Modifier.weight(1f))
-
             IconButton(onClick = {
-                val newSortOption = if (uiState.selectedSortOption == HistorySortOption.NEWEST_FIRST) {
-                    HistorySortOption.OLDEST_FIRST
-                } else {
-                    HistorySortOption.NEWEST_FIRST
-                }
+                val newSortOption =
+                    if (uiState.selectedSortOption == HistorySortOption.NEWEST_FIRST) {
+                        HistorySortOption.OLDEST_FIRST
+                    } else {
+                        HistorySortOption.NEWEST_FIRST
+                    }
                 onSetSortOption(newSortOption)
             }) {
                 Icon(
@@ -163,13 +211,27 @@ fun HistoryViewContent(
                 text = {
                     val itemDescription = when (val item = uiState.itemPendingDelete) {
                         is HistoryListItem.MeasurementItem ->
-                            stringResource(R.string.confirm_delete_measurement_message_format, String.format(Locale.US, "%.1f%%", item.measurement.percentage))
+                            stringResource(
+                                R.string.confirm_delete_measurement_message_format,
+                                String.format(Locale.US, "%.1f%%", item.measurement.percentage)
+                            )
+
                         is HistoryListItem.WeightItem ->
-                            stringResource(R.string.confirm_delete_weight_message_format, String.format(Locale.US, "%.1f", item.entry.weight), item.entry.unit.name.lowercase(Locale.getDefault()))
-                        null -> "" // Should ideally not happen if dialog is shown
-                        else -> stringResource(id = R.string.confirm_delete_generic_message)
+                            stringResource(
+                                R.string.confirm_delete_weight_message_format,
+                                String.format(Locale.US, "%.1f", item.entry.weight),
+                                item.entry.unit.name.lowercase(Locale.getDefault())
+                            )
+
+                        null -> stringResource(R.string.confirm_delete_generic_message) // Fallback
+                        else -> stringResource(R.string.confirm_delete_generic_message) // Fallback for unknown types
                     }
-                    Text(text = stringResource(R.string.confirm_delete_are_you_sure, itemDescription))
+                    Text(
+                        text = stringResource(
+                            R.string.confirm_delete_are_you_sure,
+                            itemDescription
+                        )
+                    )
                 },
                 confirmButton = {
                     TextButton(onClick = { onConfirmPendingDelete() }) {
@@ -184,9 +246,10 @@ fun HistoryViewContent(
             )
         }
 
-
-        Box(modifier = Modifier.weight(1f).fillMaxSize()) {
-            if (uiState.isLoading && !uiState.showConfirmDeleteDialog) { // Don't show loader if dialog is up
+        Box(modifier = Modifier
+            .weight(1f)
+            .fillMaxSize()) {
+            if (uiState.isLoading && !uiState.showConfirmDeleteDialog) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else if (uiState.groupedHistoryItems.isEmpty() && !uiState.isLoading) {
                 Column(
@@ -256,15 +319,13 @@ fun HistoryViewContent(
                             val dismissState = rememberSwipeToDismissBoxState(
                                 confirmValueChange = { dismissValue ->
                                     if (dismissValue == SwipeToDismissBoxValue.EndToStart) {
-                                        onRequestDeleteConfirmation(historyItem) // Updated
-                                        true // Indicate that the dismiss has been handled (dialog will show)
+                                        onRequestDeleteConfirmation(historyItem)
+                                        false // Item will snap back, dialog will show
                                     } else {
                                         false
                                     }
-                                },
-                                // positionalThreshold = { it * .25f } // Optional: to make swipe easier/harder
+                                }
                             )
-
                             SwipeToDismissBox(
                                 state = dismissState,
                                 enableDismissFromStartToEnd = false,
@@ -272,17 +333,18 @@ fun HistoryViewContent(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp)
-                                    .animateContentSize() // Animate item appearance/disappearance
+                                    .animateItem() // Correct animation modifier
                             ) {
-                                Column(modifier = Modifier.padding(vertical = 8.dp)) { // Padding for cards
+                                Column(modifier = Modifier.padding(vertical = 8.dp)) {
                                     when (historyItem) {
                                         is HistoryListItem.MeasurementItem -> MeasurementHistoryCard(
                                             measurement = historyItem.measurement,
-                                            onDelete = { onRequestDeleteConfirmation(historyItem) } // Updated
+                                            onDelete = { onRequestDeleteConfirmation(historyItem) }
                                         )
+
                                         is HistoryListItem.WeightItem -> WeightHistoryCard(
                                             entry = historyItem.entry,
-                                            onDelete = { onRequestDeleteConfirmation(historyItem) } // Updated
+                                            onDelete = { onRequestDeleteConfirmation(historyItem) }
                                         )
                                     }
                                 }
@@ -303,7 +365,6 @@ private fun SwipeBackground(dismissState: SwipeToDismissBoxState) {
         else -> Color.Transparent
     }
     val alignment = Alignment.CenterEnd
-
     Box(
         Modifier
             .fillMaxSize()
@@ -328,7 +389,6 @@ fun MeasurementHistoryCard(
 ) {
     val sdf = SimpleDateFormat("MMM dd, yyyy - hh:mm a", Locale.getDefault())
     val formattedDate = sdf.format(Date(measurement.timeStamp))
-
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -347,8 +407,13 @@ fun MeasurementHistoryCard(
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Body Fat: ${String.format(Locale.US, "%.1f", measurement.percentage)}%",
-                    style = MaterialTheme.typography.titleMedium
+                    text = "Body Fat: ${
+                        String.format(
+                            Locale.US,
+                            "%.1f",
+                            measurement.percentage
+                        )
+                    }%", style = MaterialTheme.typography.titleMedium
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -356,15 +421,9 @@ fun MeasurementHistoryCard(
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Date: $formattedDate",
-                    style = MaterialTheme.typography.bodySmall
-                )
+                Text(text = "Date: $formattedDate", style = MaterialTheme.typography.bodySmall)
             }
-            IconButton(
-                onClick = onDelete, // This now calls onRequestDeleteConfirmation via parameter
-                modifier = Modifier.size(40.dp)
-            ) {
+            IconButton(onClick = onDelete, modifier = Modifier.size(40.dp)) {
                 Icon(
                     Icons.Filled.Delete,
                     contentDescription = "Delete measurement",
@@ -382,7 +441,6 @@ fun WeightHistoryCard(
 ) {
     val sdf = SimpleDateFormat("MMM dd, yyyy - hh:mm a", Locale.getDefault())
     val formattedDate = sdf.format(Date(entry.timeStamp))
-
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -401,8 +459,13 @@ fun WeightHistoryCard(
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Weight: ${String.format(Locale.US, "%.1f", entry.weight)} ${entry.unit.name}",
-                    style = MaterialTheme.typography.titleMedium
+                    text = "Weight: ${
+                        String.format(
+                            Locale.US,
+                            "%.1f",
+                            entry.weight
+                        )
+                    } ${entry.unit.name}", style = MaterialTheme.typography.titleMedium
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 if (entry.notes?.isNotBlank() == true) {
@@ -412,15 +475,9 @@ fun WeightHistoryCard(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                 }
-                Text(
-                    text = "Date: $formattedDate",
-                    style = MaterialTheme.typography.bodySmall
-                )
+                Text(text = "Date: $formattedDate", style = MaterialTheme.typography.bodySmall)
             }
-            IconButton(
-                onClick = onDelete, // This now calls onRequestDeleteConfirmation via parameter
-                modifier = Modifier.size(40.dp)
-            ) {
+            IconButton(onClick = onDelete, modifier = Modifier.size(40.dp)) {
                 Icon(
                     Icons.Filled.Delete,
                     contentDescription = "Delete weight entry",
@@ -431,45 +488,84 @@ fun WeightHistoryCard(
     }
 }
 
-
-@Preview(showBackground = true, name = "History - Populated (Dialog Hidden)")
+@Preview(showBackground = true, name = "History - Populated (Charts & Dialog Hidden)")
 @Composable
-fun HistoryViewPreview_Populated_DialogHidden() {
-    HistoryViewPreview_Populated_WithDialogState(showDialog = false, itemIsMeasurement = true)
+fun HistoryViewPreview_Populated_Charts_DialogHidden() {
+    HistoryViewPreview_Populated_WithChartsAndDialogState(
+        showDialog = false,
+        itemIsMeasurement = true
+    )
 }
 
-@Preview(showBackground = true, name = "History - Populated (Dialog Shown - Measurement)")
+@Preview(showBackground = true, name = "History - Populated (Charts & Dialog Shown - Measurement)")
 @Composable
-fun HistoryViewPreview_Populated_DialogShown_Measurement() {
-    HistoryViewPreview_Populated_WithDialogState(showDialog = true, itemIsMeasurement = true)
+fun HistoryViewPreview_Populated_Charts_DialogShown_Measurement() {
+    HistoryViewPreview_Populated_WithChartsAndDialogState(
+        showDialog = true,
+        itemIsMeasurement = true
+    )
 }
 
-@Preview(showBackground = true, name = "History - Populated (Dialog Shown - Weight)")
 @Composable
-fun HistoryViewPreview_Populated_DialogShown_Weight() {
-    HistoryViewPreview_Populated_WithDialogState(showDialog = true, itemIsMeasurement = false)
-}
-
-
-@Composable
-private fun HistoryViewPreview_Populated_WithDialogState(showDialog: Boolean, itemIsMeasurement: Boolean) {
+private fun HistoryViewPreview_Populated_WithChartsAndDialogState(
+    showDialog: Boolean,
+    itemIsMeasurement: Boolean
+) {
     BodyFatTrackerTheme {
         val sampleTime = System.currentTimeMillis()
-        val measurementItem = HistoryListItem.MeasurementItem(BodyFatMeasurement(1L, sampleTime - 100000L, 10.0, MeasurementMethod.SEVEN_POINTS, ))
-        val weightItem = HistoryListItem.WeightItem(WeightEntry(1L, 75.5, WeightUnit.KG, sampleTime - 50000L, "Morning weigh-in"))
+        val dayMillis = 24 * 60 * 60 * 1000L
 
-        val allItems = listOf(measurementItem, weightItem).sortedByDescending { it.timestamp }
-        val groupedItems = allItems.groupBy { item -> DateUtils.formatHeaderDate(item.timestamp) }
+        val measurement1 =
+            BodyFatMeasurement(1L,sampleTime - 5 * dayMillis, 10.5, MeasurementMethod.SEVEN_POINTS, )
+        val measurement2 = BodyFatMeasurement(
+            2L,
+            sampleTime - 3 * dayMillis,
+            10.2,
+            MeasurementMethod.THREE_POINTS,
+        )
+        val measurement3 = BodyFatMeasurement(
+            3L,
+            sampleTime - 1 * dayMillis,
+            10.0,
+            MeasurementMethod.SEVEN_POINTS,
+        )
+        val sampleBfItems = listOf(measurement1, measurement2, measurement3).map {
+            HistoryListItem.MeasurementItem(it)
+        }
+        val sampleBfChartData = sampleBfItems.map {
+            Pair(
+                it.measurement.timeStamp,
+                it.measurement.percentage.toFloat()
+            )
+        }.sortedBy { it.first }
+
+        val weight1 = WeightEntry(1L, 75.5, WeightUnit.KG, sampleTime - 6 * dayMillis, "Start")
+        val weight2 = WeightEntry(2L, 75.0, WeightUnit.KG, sampleTime - 4 * dayMillis, null)
+        val weight3 = WeightEntry(3L, 74.8, WeightUnit.KG, sampleTime - 2 * dayMillis, "Good")
+        val sampleWtItems = listOf(weight1, weight2, weight3).map { HistoryListItem.WeightItem(it) }
+        val sampleWtChartData =
+            sampleWtItems.map { Pair(it.entry.timeStamp, it.entry.weight.toFloat()) }
+                .sortedBy { it.first }
+
+        val allListItems = (sampleBfItems + sampleWtItems).sortedByDescending { it.timestamp }
+        val groupedItems =
+            allListItems.groupBy { item -> DateUtils.formatHeaderDate(item.timestamp) }
+
+        val itemToDeleteForPreview = if (showDialog) {
+            if (itemIsMeasurement) sampleBfItems.first() else sampleWtItems.first()
+        } else null
 
         val sampleUiState = HistoryUiState(
             isLoading = false,
-            historyItems = allItems,
+            historyItems = allListItems,
             groupedHistoryItems = groupedItems,
             error = null,
             selectedFilter = HistoryFilterOption.ALL,
             selectedSortOption = HistorySortOption.NEWEST_FIRST,
-            itemPendingDelete = if (showDialog) (if (itemIsMeasurement) measurementItem else weightItem) else null,
-            showConfirmDeleteDialog = showDialog
+            itemPendingDelete = itemToDeleteForPreview,
+            showConfirmDeleteDialog = showDialog,
+            bodyFatChartEntries = sampleBfChartData,
+            weightChartEntries = sampleWtChartData
         )
         HistoryViewContent(
             uiState = sampleUiState,
@@ -482,7 +578,6 @@ private fun HistoryViewPreview_Populated_WithDialogState(showDialog: Boolean, it
     }
 }
 
-
 object DateUtils {
     fun isToday(timestamp: Long): Boolean = android.text.format.DateUtils.isToday(timestamp)
     fun isYesterday(timestamp: Long): Boolean {
@@ -491,23 +586,32 @@ object DateUtils {
         return yesterday.get(Calendar.YEAR) == cal.get(Calendar.YEAR) &&
                 yesterday.get(Calendar.DAY_OF_YEAR) == cal.get(Calendar.DAY_OF_YEAR)
     }
+
     fun formatHeaderDate(timestamp: Long, locale: Locale = Locale.getDefault()): String {
         return when {
-            isToday(timestamp) -> "Today" // Consider using stringResource(R.string.date_header_today)
-            isYesterday(timestamp) -> "Yesterday" // Consider using stringResource(R.string.date_header_yesterday)
+            isToday(timestamp) -> "Today"
+            isYesterday(timestamp) -> "Yesterday"
             else -> SimpleDateFormat("MMM dd, yyyy", locale).format(Date(timestamp))
         }
     }
 }
 
-@Preview(showBackground = true, name = "History View - Empty")
+@Preview(showBackground = true, name = "History View - Empty (No Charts)")
 @Composable
 fun HistoryViewPreview_Empty() {
     BodyFatTrackerTheme {
         HistoryViewContent(
-            uiState = HistoryUiState(isLoading = false, groupedHistoryItems = emptyMap()),
-            onSetFilter = {}, onSetSortOption = {},
-            onRequestDeleteConfirmation = {}, onConfirmPendingDelete = {}, onCancelDeleteConfirmation = {}
+            uiState = HistoryUiState(
+                isLoading = false,
+                groupedHistoryItems = emptyMap(),
+                bodyFatChartEntries = emptyList(), // Ensure chart data is empty
+                weightChartEntries = emptyList()   // Ensure chart data is empty
+            ),
+            onSetFilter = {},
+            onSetSortOption = {},
+            onRequestDeleteConfirmation = {},
+            onConfirmPendingDelete = {},
+            onCancelDeleteConfirmation = {}
         )
     }
 }
@@ -517,9 +621,16 @@ fun HistoryViewPreview_Empty() {
 fun HistoryViewPreview_Loading() {
     BodyFatTrackerTheme {
         HistoryViewContent(
-            uiState = HistoryUiState(isLoading = true),
-            onSetFilter = {}, onSetSortOption = {},
-            onRequestDeleteConfirmation = {}, onConfirmPendingDelete = {}, onCancelDeleteConfirmation = {}
+            uiState = HistoryUiState(
+                isLoading = true,
+                bodyFatChartEntries = emptyList(),
+                weightChartEntries = emptyList()
+            ),
+            onSetFilter = {},
+            onSetSortOption = {},
+            onRequestDeleteConfirmation = {},
+            onConfirmPendingDelete = {},
+            onCancelDeleteConfirmation = {}
         )
     }
 }

@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update // Required for _uiState.update
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -33,8 +33,10 @@ data class HistoryUiState(
     val error: String? = null,
     val selectedFilter: HistoryFilterOption = HistoryFilterOption.ALL,
     val selectedSortOption: HistorySortOption = HistorySortOption.NEWEST_FIRST,
-    val itemPendingDelete: HistoryListItem? = null, // Added
-    val showConfirmDeleteDialog: Boolean = false // Added
+    val itemPendingDelete: HistoryListItem? = null,
+    val showConfirmDeleteDialog: Boolean = false,
+    val bodyFatChartEntries: List<Pair<Long, Float>> = emptyList(), // Updated
+    val weightChartEntries: List<Pair<Long, Float>> = emptyList()    // Updated
 )
 
 @HiltViewModel
@@ -46,26 +48,28 @@ class HistoryViewModel @Inject constructor(
     private val _currentFilter = MutableStateFlow(HistoryFilterOption.ALL)
     private val _currentSortOption = MutableStateFlow(HistorySortOption.NEWEST_FIRST)
 
-    // Make _uiState mutable internally for easier updates
     private val _uiState = MutableStateFlow(
         HistoryUiState(
             isLoading = true,
             itemPendingDelete = null,
-            showConfirmDeleteDialog = false
+            showConfirmDeleteDialog = false,
+            bodyFatChartEntries = emptyList(), // Initialized
+            weightChartEntries = emptyList()    // Initialized
         )
     )
 
-    // Expose uiState as StateFlow (read-only)
     val uiState: StateFlow<HistoryUiState> = combine(
-        bodyFatInfoRepository.getAllMeasurements(),
-        weightEntryRepository.getAllWeightEntries(),
+        bodyFatInfoRepository.getAllMeasurements(), // Flow<List<BodyFatMeasurement>>
+        weightEntryRepository.getAllWeightEntries(), // Flow<List<WeightEntry>>
         _currentFilter,
         _currentSortOption,
-        _uiState // Combine with internal mutable state to reflect dialog changes
-    ) { measurements, weightEntries, currentFilter, currentSortOption, currentUiInternalState ->
+        _uiState
+    ) { rawMeasurements, rawWeightEntries, currentFilter, currentSortOption, currentUiInternalState ->
+
+        // Prepare data for list display
         val preliminaryList = mutableListOf<HistoryListItem>()
-        measurements.forEach { preliminaryList.add(HistoryListItem.MeasurementItem(it)) }
-        weightEntries.forEach { preliminaryList.add(HistoryListItem.WeightItem(it)) }
+        rawMeasurements.forEach { preliminaryList.add(HistoryListItem.MeasurementItem(it)) }
+        rawWeightEntries.forEach { preliminaryList.add(HistoryListItem.WeightItem(it)) }
 
         val filteredList = when (currentFilter) {
             HistoryFilterOption.ALL -> preliminaryList
@@ -78,26 +82,36 @@ class HistoryViewModel @Inject constructor(
         } else {
             filteredList.sortedBy { it.timestamp }
         }
-
         val groupedItems = groupHistoryItemsByDate(sortedList)
 
-        // Keep the dialog state from _uiState, but update list-related parts
+        // Prepare data for Body Fat Chart (for ProgressChart)
+        val bodyFatDataForChart = rawMeasurements
+            .sortedBy { it.timeStamp }
+            .map { Pair(it.timeStamp, it.percentage.toFloat()) }
+        // ProgressChart's default minPointsToShowChart is 3, but 2 is the minimum for a line.
+        val finalBodyFatChartEntries = if (bodyFatDataForChart.size >= 2) bodyFatDataForChart else emptyList()
+
+        // Prepare data for Weight Chart (for ProgressChart)
+        val weightDataForChart = rawWeightEntries
+            .sortedBy { it.timeStamp }
+            .map { Pair(it.timeStamp, it.weight.toFloat()) }
+        val finalWeightChartEntries = if (weightDataForChart.size >= 2) weightDataForChart else emptyList()
+
         currentUiInternalState.copy(
-            isLoading = false, // Data has been loaded/processed
+            isLoading = false,
             historyItems = sortedList,
             groupedHistoryItems = groupedItems,
-            error = currentUiInternalState.error, // Preserve any existing error
             selectedFilter = currentFilter,
-            selectedSortOption = currentSortOption
-            // itemPendingDelete and showConfirmDeleteDialog are preserved from currentUiInternalState
+            selectedSortOption = currentSortOption,
+            bodyFatChartEntries = finalBodyFatChartEntries, // Updated
+            weightChartEntries = finalWeightChartEntries    // Updated
+            // itemPendingDelete, showConfirmDeleteDialog, and error are preserved from currentUiInternalState
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        // initialValue is now effectively handled by _uiState's initial value and the combine logic
-        initialValue = _uiState.value // Use the initial value of _uiState
+        initialValue = _uiState.value
     )
-
 
     fun setFilter(filter: HistoryFilterOption) {
         _currentFilter.value = filter
@@ -155,7 +169,7 @@ class HistoryViewModel @Inject constructor(
                 currentState.copy(
                     itemPendingDelete = null,
                     showConfirmDeleteDialog = false,
-                    error = if (errorOccurred) errorMessage else currentState.error, // Update error only if one occurred now
+                    error = if (errorOccurred) errorMessage else currentState.error,
                     isLoading = false
                 )
             }

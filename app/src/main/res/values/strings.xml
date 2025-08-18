@@ -129,4 +129,6 @@
     <string name="confirm_delete_are_you_sure">Are you sure you want to delete this item?</string>
     <string name="action_delete">Delete</string>
     <string name="action_cancel">Cancel</string>
+    <string name="weight_trend_title">Weight Trend</string>
+    <string name="body_fat_trend_title">Body Fat Trend</string>
 </resources>
