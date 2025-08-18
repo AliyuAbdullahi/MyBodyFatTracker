@@ -131,4 +131,8 @@
     <string name="action_cancel">Cancel</string>
     <string name="weight_trend_title">Weight Trend</string>
     <string name="body_fat_trend_title">Body Fat Trend</string>
+    <string name="hide_body_fat_chart">Hide body fat</string>
+    <string name="show_body_fat_chart">Show body fat trend</string>
+    <string name="hide_weight_chart">Hide weight trend</string>
+    <string name="show_weight_chart">Show weight trend</string>
 </resources>

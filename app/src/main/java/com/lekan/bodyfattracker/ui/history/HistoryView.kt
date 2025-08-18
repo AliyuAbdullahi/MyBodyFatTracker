@@ -24,6 +24,8 @@ import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Percent
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -76,7 +78,9 @@ fun HistoryScreen(
         onSetSortOption = viewModel::setSortOption,
         onRequestDeleteConfirmation = viewModel::requestDeleteConfirmation,
         onConfirmPendingDelete = viewModel::confirmPendingDelete,
-        onCancelDeleteConfirmation = viewModel::cancelDeleteConfirmation
+        onCancelDeleteConfirmation = viewModel::cancelDeleteConfirmation,
+        onToggleWeightChartVisibility = viewModel::toggleWeightChartVisibility,
+        onToggleBodyFatChartVisibility = viewModel::toggleBodyFatChartVisibility
     )
 }
 
@@ -89,6 +93,8 @@ fun HistoryViewContent(
     onRequestDeleteConfirmation: (HistoryListItem) -> Unit,
     onConfirmPendingDelete: () -> Unit,
     onCancelDeleteConfirmation: () -> Unit,
+    onToggleBodyFatChartVisibility: () -> Unit = {},
+    onToggleWeightChartVisibility: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxSize()) {
@@ -112,38 +118,65 @@ fun HistoryViewContent(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 if (uiState.bodyFatChartEntries.isNotEmpty()) {
-                    Text(
-                        text = stringResource(R.string.body_fat_trend_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(bottom = 4.dp)
-                    )
-                    ProgressChart(
-                        entries = uiState.bodyFatChartEntries,
-                        yAxisTitle = "%",
-                        lineColor = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(180.dp) // Adjusted height
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = stringResource(R.string.body_fat_trend_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                        IconButton(onClick = onToggleBodyFatChartVisibility) {
+                            Icon(
+                                imageVector = if (uiState.showBodyFatChart) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                contentDescription = stringResource(if (uiState.showBodyFatChart) R.string.hide_body_fat_chart else R.string.show_body_fat_chart)
+                            )
+                        }
+                    }
+                    if (uiState.showBodyFatChart) { // Conditionally display chart
+                        ProgressChart(
+                            entries = uiState.bodyFatChartEntries,
+                            yAxisTitle = "%",
+                            lineColor = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(180.dp)
+                                .animateContentSize()
+                        )
+                    }
                 }
 
                 if (uiState.weightChartEntries.isNotEmpty()) {
-                    Text(
-                        text = stringResource(R.string.weight_trend_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(
-                            top = if (uiState.bodyFatChartEntries.isNotEmpty()) 8.dp else 0.dp,
-                            bottom = 4.dp
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = if (uiState.bodyFatChartEntries.isNotEmpty()) 8.dp else 0.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = stringResource(R.string.weight_trend_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(bottom = 4.dp)
                         )
-                    )
-                    ProgressChart(
-                        entries = uiState.weightChartEntries,
-                        yAxisTitle = "Weight", // Using a generic title for now
-                        lineColor = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(180.dp) // Adjusted height
-                    )
+                        IconButton(onClick = onToggleWeightChartVisibility) {
+                            Icon(
+                                imageVector = if (uiState.showWeightChart) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                contentDescription = stringResource(if (uiState.showWeightChart) R.string.hide_weight_chart else R.string.show_weight_chart)
+                            )
+                        }
+                    }
+                    if (uiState.showWeightChart) { // Conditionally display chart
+                        ProgressChart(
+                            entries = uiState.weightChartEntries,
+                            yAxisTitle = "Weight",
+                            lineColor = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(180.dp)
+                                .animateContentSize()
+                        )
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))

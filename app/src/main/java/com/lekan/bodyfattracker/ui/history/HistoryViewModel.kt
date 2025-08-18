@@ -36,7 +36,9 @@ data class HistoryUiState(
     val itemPendingDelete: HistoryListItem? = null,
     val showConfirmDeleteDialog: Boolean = false,
     val bodyFatChartEntries: List<Pair<Long, Float>> = emptyList(), // Updated
-    val weightChartEntries: List<Pair<Long, Float>> = emptyList()    // Updated
+    val weightChartEntries: List<Pair<Long, Float>> = emptyList(),// Updated
+    val showBodyFatChart: Boolean = true, // Initialized
+    val showWeightChart: Boolean = true
 )
 
 @HiltViewModel
@@ -54,7 +56,9 @@ class HistoryViewModel @Inject constructor(
             itemPendingDelete = null,
             showConfirmDeleteDialog = false,
             bodyFatChartEntries = emptyList(), // Initialized
-            weightChartEntries = emptyList()    // Initialized
+            weightChartEntries = emptyList(),    // Initialized
+            showWeightChart = true,
+            showBodyFatChart = true
         )
     )
 
@@ -89,13 +93,15 @@ class HistoryViewModel @Inject constructor(
             .sortedBy { it.timeStamp }
             .map { Pair(it.timeStamp, it.percentage.toFloat()) }
         // ProgressChart's default minPointsToShowChart is 3, but 2 is the minimum for a line.
-        val finalBodyFatChartEntries = if (bodyFatDataForChart.size >= 2) bodyFatDataForChart else emptyList()
+        val finalBodyFatChartEntries =
+            if (bodyFatDataForChart.size >= 2) bodyFatDataForChart else emptyList()
 
         // Prepare data for Weight Chart (for ProgressChart)
         val weightDataForChart = rawWeightEntries
             .sortedBy { it.timeStamp }
             .map { Pair(it.timeStamp, it.weight.toFloat()) }
-        val finalWeightChartEntries = if (weightDataForChart.size >= 2) weightDataForChart else emptyList()
+        val finalWeightChartEntries =
+            if (weightDataForChart.size >= 2) weightDataForChart else emptyList()
 
         currentUiInternalState.copy(
             isLoading = false,
@@ -131,8 +137,10 @@ class HistoryViewModel @Inject constructor(
             when {
                 itemCalendar.get(Calendar.YEAR) == todayCalendar.get(Calendar.YEAR) &&
                         itemCalendar.get(Calendar.DAY_OF_YEAR) == todayCalendar.get(Calendar.DAY_OF_YEAR) -> "Today"
+
                 itemCalendar.get(Calendar.YEAR) == yesterdayCalendar.get(Calendar.YEAR) &&
                         itemCalendar.get(Calendar.DAY_OF_YEAR) == yesterdayCalendar.get(Calendar.DAY_OF_YEAR) -> "Yesterday"
+
                 else -> sdfHeader.format(Date(item.timestamp))
             }
         }
@@ -140,7 +148,11 @@ class HistoryViewModel @Inject constructor(
 
     fun requestDeleteConfirmation(item: HistoryListItem) {
         _uiState.update { currentState ->
-            currentState.copy(itemPendingDelete = item, showConfirmDeleteDialog = true, isLoading = false)
+            currentState.copy(
+                itemPendingDelete = item,
+                showConfirmDeleteDialog = true,
+                isLoading = false
+            )
         }
     }
 
@@ -156,6 +168,7 @@ class HistoryViewModel @Inject constructor(
                         is HistoryListItem.MeasurementItem -> {
                             bodyFatInfoRepository.deleteMeasurementById(itemToDelete.measurement.id)
                         }
+
                         is HistoryListItem.WeightItem -> {
                             weightEntryRepository.deleteWeightEntryById(itemToDelete.entry.id)
                         }
@@ -178,7 +191,24 @@ class HistoryViewModel @Inject constructor(
 
     fun cancelDeleteConfirmation() {
         _uiState.update { currentState ->
-            currentState.copy(itemPendingDelete = null, showConfirmDeleteDialog = false, isLoading = false, error = null)
+            currentState.copy(
+                itemPendingDelete = null,
+                showConfirmDeleteDialog = false,
+                isLoading = false,
+                error = null
+            )
+        }
+    }
+
+    fun toggleBodyFatChartVisibility() {
+        _uiState.update { currentState ->
+            currentState.copy(showBodyFatChart = !currentState.showBodyFatChart)
+        }
+    }
+
+    fun toggleWeightChartVisibility() {
+        _uiState.update { currentState ->
+            currentState.copy(showWeightChart = !currentState.showWeightChart)
         }
     }
 }
