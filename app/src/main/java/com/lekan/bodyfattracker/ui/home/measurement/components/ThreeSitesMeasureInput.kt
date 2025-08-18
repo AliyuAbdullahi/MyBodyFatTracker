@@ -73,7 +73,7 @@ fun ThreeSitesMeasureInput(
     val site3Focus = remember { FocusRequester() }
 
     val isFormComplete = age.isNotBlank() &&
-            // selectedGender != Gender.NONE && // Assuming Gender doesn'''t have a NONE state based on new default
+            // selectedGender != Gender.NONE && // Assuming Gender doesn't have a NONE state based on new default
             chestSkinfold.isNotBlank() &&
             abdomenSkinfold.isNotBlank() &&
             thighSkinfold.isNotBlank()
@@ -183,8 +183,10 @@ fun ThreeSitesMeasureInput(
             modifier = Modifier
                 .fillMaxWidth()
                 .focusRequester(ageFocus)
-                .padding(bottom = 16.dp)
+                //.padding(bottom = 16.dp) // Removed to use divider spacing
         )
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp)) // Added Divider
 
         Text(
             text = stringResource(R.string.gender_label),
@@ -204,8 +206,10 @@ fun ThreeSitesMeasureInput(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 24.dp)
+                //.padding(bottom = 24.dp) // Removed to use divider spacing
         )
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp)) // Added Divider
 
         Text(
             text = stringResource(R.string.skinfold_measurements_mm_label),
@@ -215,28 +219,38 @@ fun ThreeSitesMeasureInput(
                 .padding(bottom = 8.dp)
         )
 
-        skinfoldSitesToDisplay.forEachIndexed { index, siteData ->
-            MeasurementInputRow(
-                imageResId = siteData.imageResId, // Correct image is already selected
-                imageContentDescription = stringResource(id = siteData.labelStringResId),
-                label = stringResource(id = siteData.labelStringResId) + " (mm)",
-                value = siteData.currentValue,
-                onValueChanged = skinfoldChangeHandlers[index],
-                onActionDone = {
-                    if (index < skinfoldSitesToDisplay.size - 1) {
-                        skinfoldSitesToDisplay[index + 1].focusRequester.requestFocus()
-                    } else {
-                        keyboardController?.hide()
-                        if (isFormComplete) onCalculateClicked() // Auto-calculate if last and complete
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .focusRequester(siteData.focusRequester)
-                    .padding(bottom = 16.dp),
-                keyboardType = KeyboardType.Number
-            )
+        OutlinedCard( // Added OutlinedCard
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp) // Spacing before Calculate button
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) { // Padding inside the card
+                skinfoldSitesToDisplay.forEachIndexed { index, siteData ->
+                    MeasurementInputRow(
+                        imageResId = siteData.imageResId,
+                        imageContentDescription = stringResource(id = siteData.labelStringResId),
+                        label = stringResource(id = siteData.labelStringResId) + " (mm)",
+                        value = siteData.currentValue,
+                        onValueChanged = skinfoldChangeHandlers[index],
+                        onActionDone = {
+                            if (index < skinfoldSitesToDisplay.size - 1) {
+                                skinfoldSitesToDisplay[index + 1].focusRequester.requestFocus()
+                            } else {
+                                keyboardController?.hide()
+                                if (isFormComplete) onCalculateClicked() // Auto-calculate if last and complete
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusRequester(siteData.focusRequester)
+                            // Adjust padding: only add bottom padding if not the last item in the card
+                            .padding(bottom = if (index < skinfoldSitesToDisplay.size - 1) 16.dp else 0.dp),
+                        keyboardType = KeyboardType.Number
+                    )
+                }
+            }
         }
+
 
         // This Button should be inside the Column to scroll with the content
         // Or anchored at the bottom of the screen if that's the desired UI.
@@ -375,39 +389,8 @@ fun ThreeSitesMeasureInputPreviewMaleEmpty() {
                 thighSkinfold = site3Value,
                 onThighSkinfoldChanged = { site3Value = it },
                 onCalculateClicked = {
-                    println("Calculate: Age=$age, Gender=$gender, Chest=$site1Value, Abs=$site2Value, Thigh=$site3Value")
+                    println("Calculate: Age=$age, Gender=$gender, Chest=$site1Value, Abdomen=$site2Value, Thigh=$site3Value")
                 }
-            )
-        }
-    }
-}
-
-@Preview(showBackground = true, name = "3-Site Input - Female Selected - All Fields Filled")
-@Composable
-fun ThreeSitesMeasureInputPreviewFemaleFilled() {
-    BodyFatTrackerTheme {
-        var age by remember { mutableStateOf("35") }
-        var gender by remember { mutableStateOf(Gender.FEMALE) }
-        var site1Value by remember { mutableStateOf("12") } // Triceps
-        var site2Value by remember { mutableStateOf("18") } // Suprailiac
-        var site3Value by remember { mutableStateOf("22") } // Thigh
-
-        Surface(modifier = Modifier.fillMaxSize()) {
-            ThreeSitesMeasureInput(
-                age = age,
-                onAgeChanged = { age = it },
-                selectedGender = gender,
-                onGenderSelected = { gender = it },
-                chestSkinfold = site1Value,
-                onChestSkinfoldChanged = { site1Value = it },
-                abdomenSkinfold = site2Value,
-                onAbdomenSkinfoldChanged = { site2Value = it },
-                thighSkinfold = site3Value,
-                onThighSkinfoldChanged = { site3Value = it },
-                onCalculateClicked = {
-                    println("Calculate: Age=$age, Gender=$gender, Triceps=$site1Value, Suprailiac=$site2Value, Thigh=$site3Value")
-                },
-                // modifier = Modifier.padding(bottom = 56.dp) // Example if you had an anchored button
             )
         }
     }

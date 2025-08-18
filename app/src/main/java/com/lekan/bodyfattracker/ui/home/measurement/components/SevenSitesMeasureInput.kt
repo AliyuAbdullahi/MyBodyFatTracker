@@ -1,4 +1,4 @@
-package com.lekan.bodyfattracker.ui.home.measurement.components // Adjust package as needed
+package com.lekan.bodyfattracker.ui.home.measurement.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding // Added import
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
@@ -16,9 +16,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider // Added import
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard // Added import
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -50,9 +52,8 @@ import com.lekan.bodyfattracker.ui.theme.BodyFatTrackerTheme
 fun SevenSitesMeasureInput(
     age: String,
     onAgeChanged: (String) -> Unit,
-    selectedGender: Gender = Gender.FEMALE, // Default to Female or Male
+    selectedGender: Gender = Gender.FEMALE,
     onGenderSelected: (Gender) -> Unit,
-    // Skinfold sites for 7-point method
     chestSkinfold: String,
     onChestSkinfoldChanged: (String) -> Unit,
     midaxillarySkinfold: String,
@@ -84,7 +85,6 @@ fun SevenSitesMeasureInput(
     val site7Focus = remember { FocusRequester() }
 
     val isFormComplete = age.isNotBlank() &&
-            // selectedGender != Gender.NONE && // Assuming selectedGender always has a value
             chestSkinfold.isNotBlank() &&
             midaxillarySkinfold.isNotBlank() &&
             tricepsSkinfold.isNotBlank() &&
@@ -97,34 +97,27 @@ fun SevenSitesMeasureInput(
         selectedGender, chestSkinfold, midaxillarySkinfold, tricepsSkinfold,
         subscapularSkinfold, abdomenSkinfold, suprailiacSkinfold, thighSkinfold
     ) {
-        // For 7-site, the sites are often the same labels for male and female,
-        // but the image or exact measurement technique might differ subtly.
-        // We'''ll primarily differentiate by image if needed.
-        // If the sites themselves differ significantly, adjust the data class or logic.
-
         val maleSites = listOf(
             SkinfoldSiteData(R.drawable.man_front_chest, R.string.chest_label_skinfold, chestSkinfold, site1Focus),
-            SkinfoldSiteData(R.drawable.man_side_axilla, R.string.midaxillary_label_skinfold, midaxillarySkinfold, site2Focus), // Replace with actual drawables
+            SkinfoldSiteData(R.drawable.man_side_axilla, R.string.midaxillary_label_skinfold, midaxillarySkinfold, site2Focus),
             SkinfoldSiteData(R.drawable.man_arm_triceps, R.string.triceps_label_skinfold, tricepsSkinfold, site3Focus),
             SkinfoldSiteData(R.drawable.man_back_subscapular, R.string.subscapular_label_skinfold, subscapularSkinfold, site4Focus),
             SkinfoldSiteData(R.drawable.man_front_abs, R.string.abdomen_label_skinfold, abdomenSkinfold, site5Focus),
             SkinfoldSiteData(R.drawable.man_side_suprailiac, R.string.suprailiac_label_skinfold, suprailiacSkinfold, site6Focus),
-            SkinfoldSiteData(R.drawable.thigh, R.string.thigh_label_skinfold, thighSkinfold, site7Focus) // Common thigh image
+            SkinfoldSiteData(R.drawable.thigh, R.string.thigh_label_skinfold, thighSkinfold, site7Focus)
         )
         val femaleSites = listOf(
-            SkinfoldSiteData(R.drawable.woman_front_chest, R.string.chest_label_skinfold, chestSkinfold, site1Focus), // Or specific woman chest image
+            SkinfoldSiteData(R.drawable.woman_front_chest, R.string.chest_label_skinfold, chestSkinfold, site1Focus),
             SkinfoldSiteData(R.drawable.woman_side_axilla, R.string.midaxillary_label_skinfold, midaxillarySkinfold, site2Focus),
             SkinfoldSiteData(R.drawable.woman_arm_triceps, R.string.triceps_label_skinfold, tricepsSkinfold, site3Focus),
             SkinfoldSiteData(R.drawable.woman_back_subscapular, R.string.subscapular_label_skinfold, subscapularSkinfold, site4Focus),
-            SkinfoldSiteData(R.drawable.woman_front_abs, R.string.abdomen_label_skinfold, abdomenSkinfold, site5Focus), // Or specific woman abdomen image
+            SkinfoldSiteData(R.drawable.woman_front_abs, R.string.abdomen_label_skinfold, abdomenSkinfold, site5Focus),
             SkinfoldSiteData(R.drawable.woman_side_suprailiac, R.string.suprailiac_label_skinfold, suprailiacSkinfold, site6Focus),
-            SkinfoldSiteData(R.drawable.thigh, R.string.thigh_label_skinfold, thighSkinfold, site7Focus) // Common thigh image
+            SkinfoldSiteData(R.drawable.thigh, R.string.thigh_label_skinfold, thighSkinfold, site7Focus)
         )
-
         when (selectedGender) {
             Gender.MALE -> maleSites
             Gender.FEMALE -> femaleSites
-            // else -> emptyList() // Should not happen if gender has a default
         }
     }
 
@@ -138,28 +131,26 @@ fun SevenSitesMeasureInput(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .imePadding() // Added imePadding
+            .imePadding()
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
-
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween // Pushes title and icon apart
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = stringResource(R.string.seven_site_skinfold_title), // "7-Site Skinfold Calculation"
+                text = stringResource(R.string.seven_site_skinfold_title),
                 style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(bottom = 16.dp) // Keep this padding or adjust as needed
             )
             IconButton(onClick = onResetClicked) {
                 Icon(
-                    imageVector = Icons.Filled.Refresh, // Replace with your desired reset icon
-                    contentDescription = stringResource(R.string.reset_form_button_description) // For accessibility
+                    imageVector = Icons.Filled.Refresh,
+                    contentDescription = stringResource(R.string.reset_form_button_description)
                 )
             }
         }
@@ -179,8 +170,9 @@ fun SevenSitesMeasureInput(
             modifier = Modifier
                 .fillMaxWidth()
                 .focusRequester(ageFocus)
-                .padding(bottom = 16.dp)
+            // .padding(bottom = 16.dp) // Removed specific bottom padding here
         )
+        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp)) // Added Divider
 
         Text(
             text = stringResource(R.string.gender_label),
@@ -189,19 +181,19 @@ fun SevenSitesMeasureInput(
                 .fillMaxWidth()
                 .padding(bottom = 8.dp)
         )
-        GenderSelector( // Assuming GenderSelector is the same as in ThreeSites
+        GenderSelector(
             selectedGender = selectedGender,
             onGenderSelected = {
                 onGenderSelected(it)
-                // Focus first site when gender changes, if sites are available
                 if (skinfoldSitesToDisplay.isNotEmpty()) {
                     site1Focus.requestFocus()
                 }
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 24.dp)
+            // .padding(bottom = 24.dp) // Removed specific bottom padding here
         )
+        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp)) // Added Divider
 
         Text(
             text = stringResource(R.string.skinfold_measurements_mm_label),
@@ -211,30 +203,39 @@ fun SevenSitesMeasureInput(
                 .padding(bottom = 8.dp)
         )
 
-        skinfoldSitesToDisplay.forEachIndexed { index, siteData ->
-            MeasurementInputRow(
-                imageResId = siteData.imageResId,
-                imageContentDescription = stringResource(id = siteData.labelStringResId),
-                label = stringResource(id = siteData.labelStringResId) + " (mm)",
-                value = siteData.currentValue,
-                onValueChanged = skinfoldChangeHandlers[index],
-                onActionDone = {
-                    if (index < skinfoldSitesToDisplay.size - 1) {
-                        skinfoldSitesToDisplay[index + 1].focusRequester.requestFocus()
-                    } else {
-                        keyboardController?.hide()
-                        if (isFormComplete) onCalculateClicked()
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .focusRequester(siteData.focusRequester)
-                    .padding(bottom = 16.dp),
-                keyboardType = KeyboardType.Number
-            )
+        OutlinedCard( // Added OutlinedCard
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp) // For spacing before the Calculate button
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) { // Padding inside the card
+                skinfoldSitesToDisplay.forEachIndexed { index, siteData ->
+                    MeasurementInputRow(
+                        imageResId = siteData.imageResId,
+                        imageContentDescription = stringResource(id = siteData.labelStringResId),
+                        label = stringResource(id = siteData.labelStringResId) + " (mm)",
+                        value = siteData.currentValue,
+                        onValueChanged = skinfoldChangeHandlers[index],
+                        onActionDone = {
+                            if (index < skinfoldSitesToDisplay.size - 1) {
+                                skinfoldSitesToDisplay[index + 1].focusRequester.requestFocus()
+                            } else {
+                                keyboardController?.hide()
+                                if (isFormComplete) onCalculateClicked()
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusRequester(siteData.focusRequester)
+                            // Adjust padding: only add bottom padding if not the last item in the card
+                            .padding(bottom = if (index < skinfoldSitesToDisplay.size - 1) 16.dp else 0.dp),
+                        keyboardType = KeyboardType.Number
+                    )
+                }
+            }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(16.dp)) // Keep or adjust based on overall spacing
 
         Button(
             onClick = {
@@ -319,4 +320,3 @@ fun SevenSitesMeasureInputPreviewMaleEmpty() {
         }
     }
 }
-
