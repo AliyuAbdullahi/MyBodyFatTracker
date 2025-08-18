@@ -3,7 +3,8 @@ package com.lekan.bodyfattracker.ui.home.measurement.viewmodels
 import androidx.lifecycle.viewModelScope
 import com.lekan.bodyfattracker.domain.IBodyFatInfoRepository
 import com.lekan.bodyfattracker.domain.IProfileRepository
-import com.lekan.bodyfattracker.model.BodyFatInfo
+import com.lekan.bodyfattracker.model.BodyFatMeasurement
+import com.lekan.bodyfattracker.model.MeasurementMethod
 import com.lekan.bodyfattracker.ui.core.CoreViewModel
 import com.lekan.bodyfattracker.ui.home.Gender
 import com.lekan.bodyfattracker.ui.home.calculateBodyFatPercentageThreeSites
@@ -22,7 +23,7 @@ data class ThreeSiteMeasurementState(
     val skinfold2: String = "", // Represents Abdomen (Male) or Suprailiac (Female)
     val skinfold3: String = "", // Represents Thigh for both
     val isFormComplete: Boolean = false,
-    val calculationResult: BodyFatInfo? = null,
+    val calculationResult: BodyFatMeasurement? = null,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val canSaveResult: Boolean = false,
@@ -37,7 +38,9 @@ class ThreeSiteMeasurementViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            updateState { copy(age = profileRepository.getProfile()?.age?.toString() ?: "") }
+            profileRepository.getProfileSync()?.let { profile ->
+                updateState { copy(age = "${profile.age}", selectedGender = profile.gender).validateForm() }
+            }
         }
     }
 
@@ -145,22 +148,22 @@ class ThreeSiteMeasurementViewModel @Inject constructor(
                     )
                     val currentDateStr = sdf.format(Date())
                     val currentTimeStamp = System.currentTimeMillis()
-
-                    val bodyFatInfoResult = BodyFatInfo(
-                        percentage = bodyFatPercentageDouble.toInt(), // Cast Double to Int
-                        date = currentDateStr,
+//
+                    val bodyFatMeasurementResult = BodyFatMeasurement(
                         timeStamp = currentTimeStamp,
-                        type = BodyFatInfo.Type.THREE_POINTS // Use the enum from BodyFatInfo
+                        percentage = bodyFatPercentageDouble,
+                        method = MeasurementMethod.THREE_POINTS
+                        // notes = null // Assuming notes are not collected in this ViewModel
                     )
 
                     if (state.value.canSaveResult) {
-                        repository.addBodyFatInfo(bodyFatInfoResult)
+                        repository.saveMeasurement(bodyFatMeasurementResult)
                     }
 
                     updateState {
                         copy(
                             isLoading = false,
-                            calculationResult = bodyFatInfoResult,
+                            calculationResult = bodyFatMeasurementResult,
                             errorMessage = null,
                             isShowingResult = true
                         )

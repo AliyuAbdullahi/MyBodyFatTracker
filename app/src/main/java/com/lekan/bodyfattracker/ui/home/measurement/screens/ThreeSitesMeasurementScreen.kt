@@ -9,12 +9,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
@@ -40,7 +36,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.lekan.bodyfattracker.R
-import com.lekan.bodyfattracker.model.BodyFatInfo
+import com.lekan.bodyfattracker.model.BodyFatMeasurement
 import com.lekan.bodyfattracker.ui.home.measurement.components.ThreeSitesMeasureInput
 import com.lekan.bodyfattracker.ui.home.measurement.viewmodels.ThreeSiteMeasurementViewModel
 import com.lekan.bodyfattracker.ui.theme.BodyFatTrackerTheme
@@ -197,16 +193,16 @@ fun ThreeSitesMeasurementScreenWithSheetPreview() {
                     .background(Color.Black.copy(alpha = 0.6f)),
                 contentAlignment = Alignment.BottomCenter
             ) {
-                CalculationResultSheet(
-                    result = BodyFatInfo(
-                        percentage = 15,
-                        date = "15/07/2023 - 11:30",
-                        timeStamp = System.currentTimeMillis(),
-                        type = BodyFatInfo.Type.THREE_POINTS // Use correct type
-                    ),
-                    onRecalculate = {},
-                    onClose = {}
-                )
+//                CalculationResultSheet(
+//                    result = BodyFatMeasurement(
+//                        percentage = 15.0,
+////                        date = "15/07/2023 - 11:30",
+//                        timeStamp = System.currentTimeMillis(),
+//                        type = BodyFatMeasurement.Type.THREE_POINTS // Use correct type
+//                    ),
+//                    onRecalculate = {},
+//                    onClose = {}
+//                )
             }
         }
     }

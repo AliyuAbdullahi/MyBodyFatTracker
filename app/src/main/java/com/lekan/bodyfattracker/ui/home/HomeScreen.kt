@@ -1,259 +1,199 @@
 package com.lekan.bodyfattracker.ui.home
 
-import AdmobBanner
-import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.filled.FitnessCenter // Assuming this resolves, or we'll change it
+import androidx.compose.material.icons.filled.SquareFoot   // Assuming this resolves, or we'll change it
+import androidx.compose.material.icons.filled.Straighten   // Assuming this resolves, or we'll change it
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.lekan.bodyfattracker.R
-import com.lekan.bodyfattracker.model.BodyFatInfo
-import com.lekan.bodyfattracker.ui.home.components.HomeView
-import com.lekan.bodyfattracker.ui.theme.White
+import com.lekan.bodyfattracker.model.WeightEntry // Required for the new parameter
+import com.lekan.bodyfattracker.ui.home.components.LatestMeasurementCard
+import com.lekan.bodyfattracker.ui.home.components.LatestWeightEntryCard
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
-    onStartThreeSites: () -> Unit = {},
-    onStartSevenSites: () -> Unit = {},
-    onStartThreeSitesGuest: () -> Unit = {},
-    onStartSevenSitesGuest: () -> Unit = {},
+    onNavigateToAddMeasurement: () -> Unit,
+    onNavigateToAddWeightEntry: () -> Unit,
+    onStartSevenSites: () -> Unit,
+    onStartThreeSites: () -> Unit,
+    onStartThreeSitesGuest: () -> Unit,
+    onStartSevenSitesGuest: () -> Unit
 ) {
-    val state = viewModel.state.collectAsState().value
-    val context = LocalContext.current
-    Box(modifier = Modifier.fillMaxSize()) {
-        HomeView(
-            lastInfo = state.bodyFatInfo,
-            name = state.userName,
-            goal = state.bodyFatGoal,
-            onStartThreeSites = onStartThreeSites,
-            onStartSevenSites = onStartSevenSites,
-            onGuestClicked = {
-                viewModel.takeGuestMeasurement()
-            },
-            onThreeSitesMoreInfo = {
-                viewModel.onMoreInfoClicked(
-                    getInfo(
-                        context,
-                        BodyFatInfo.Type.THREE_POINTS
-                    )
-                )
-            },
-            onFivSitesMoreInfo = {
-                viewModel.onMoreInfoClicked(
-                    getInfo(
-                        context,
-                        BodyFatInfo.Type.SEVEN_POINTS
-                    )
-                )
-            },
-            onGuestInfoClicked = { viewModel.onMoreInfoClicked(getInfo(context, null)) }
-        )
-        AnimatedVisibility(visible = state.info != null) {
-            state.info?.let {
-                InfoCard(
-                    imageResId = R.drawable.caliper,
-                    imageContentDescription = "Caliper",
-                    infoText = it,
-                    onCloseClicked = { viewModel.onClearInfoClicked() }
-                )
-            }
-        }
-        AdmobBanner(modifier = Modifier.fillMaxWidth().align(Alignment.BottomCenter))
-        AnimatedVisibility(visible = state.isTakingGuestMeasurement) {
-            GuestMeasurementCard(
-                onClose = {
-                    viewModel.clearGuestMeasurement()
-                },
-                onThreeSitesClicked = {
-                    onStartThreeSitesGuest()
-                    viewModel.clearGuestMeasurement()
-                },
-                onSevenSitesClicked = {
-                    onStartSevenSitesGuest()
-                    viewModel.clearGuestMeasurement()
+    val uiState by viewModel.state.collectAsState()
+    val isLoading = uiState.isLoading
+    val userProfile = uiState.userProfile
+    val latestMeasurement = uiState.latestMeasurement
+    val latestWeightEntry = uiState.latestWeightEntry
+    val recentWeightEntries = uiState.recentWeightEntries // Extract recent entries
+
+    var isFabExpanded by remember { mutableStateOf(false) }
+    val fabRotation by animateFloatAsState(targetValue = if (isFabExpanded) 45f else 0f, label = "fab_rotation")
+
+    Scaffold(
+        topBar = {
+            TopAppBar(title = { Text("Body Fat Tracker") }, windowInsets = WindowInsets(0),)
+        },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        floatingActionButton = {
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                AnimatedVisibility(
+                    visible = isFabExpanded,
+                    enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
+                    exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 })
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.End,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        ExtendedFloatingActionButton(
+                            onClick = {
+                                onStartThreeSites()
+                                isFabExpanded = false
+                            },
+                            icon = { Icon(Icons.Filled.SquareFoot, "Add 3-Site Measurement") },
+                            text = { Text("3-Site") },
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        )
+                        ExtendedFloatingActionButton(
+                            onClick = {
+                                onStartSevenSites()
+                                isFabExpanded = false
+                            },
+                            icon = { Icon(Icons.Filled.Straighten, "Add 7-Site Measurement") },
+                            text = { Text("7-Site") },
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        )
+                        ExtendedFloatingActionButton(
+                            onClick = {
+                                onNavigateToAddWeightEntry()
+                                isFabExpanded = false
+                            },
+                            icon = { Icon(Icons.Filled.FitnessCenter, "Add Weight Entry") },
+                            text = { Text("Weight") },
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        )
+                        ExtendedFloatingActionButton(
+                            onClick = {
+                                onStartThreeSitesGuest() // New action
+                                isFabExpanded = false
+                            },
+                            icon = { Icon(Icons.Filled.SquareFoot, "Add 3-Site Guest Measurement") },
+                            text = { Text("3-Site Guest") },
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        )
+                        ExtendedFloatingActionButton(
+                            onClick = {
+                                onStartSevenSitesGuest() // New action
+                                isFabExpanded = false
+                            },
+                            icon = { Icon(Icons.Filled.Straighten, "Add 7-Site Guest Measurement") },
+                            text = { Text("7-Site Guest") },
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        )
+                    }
                 }
-            )
+
+                FloatingActionButton(
+                    onClick = { isFabExpanded = !isFabExpanded },
+                    containerColor = MaterialTheme.colorScheme.primary
+                ) {
+                    Icon(
+                        imageVector = if (isFabExpanded) Icons.Filled.Close else Icons.Filled.Add,
+                        contentDescription = if (isFabExpanded) "Close FAB" else "Open FAB",
+                        modifier = Modifier.rotate(fabRotation)
+                    )
+                }
+            }
         }
-    }
+    ) { paddingValues ->
+        Box(modifier = Modifier.fillMaxSize()) { // Outer Box for Scrim (if any) and Content
+            // Scrim: Drawn first, so it's behind the main content if visible
 
-    LaunchedEffect(Unit) {
-        viewModel.update()
-    }
-}
-
-// New Composable Function for the Info Card
-@Composable
-fun InfoCard(
-    modifier: Modifier = Modifier, // Allow passing modifiers from the caller
-    imageResId: Int,              // Drawable resource ID for the image
-    imageContentDescription: String,
-    infoText: String,
-    imageSize: Int = 120, // Default image size in dp
-    imageBackgroundColor: Color = MaterialTheme.colorScheme.surfaceVariant, // Background for image container
-    onCloseClicked: () -> Unit = {}
-) {
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .clickable {
-                onCloseClicked()
-            }
-            .background(color = Color.Black.copy(alpha = 0.6F)),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            modifier = Modifier // Apply caller-provided modifiers first
-                .fillMaxWidth()
-                .clickable(
-                    interactionSource = null,
-                    indication = null
-                ) {}
-                .padding(horizontal = 32.dp) // Outer padding for the card itself
-                .clip(RoundedCornerShape(16.dp)) // Corner radius for the card
-                .background(MaterialTheme.colorScheme.surface) // Background color for the card
-                .padding(16.dp), // Inner padding for the content *within* the card
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            // Image Container (optional, if you want a specific background or shape for the image)
-
-            Row(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Spacer(modifier = Modifier.weight(1f)) // Spacer to push the image to the left
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Close",
-                    tint = Color.Black,
-                    modifier = Modifier.clickable { onCloseClicked() })
-            }
-
-            Box(
-                modifier = Modifier
-                    .size(imageSize.dp)
-                    .clip(CircleShape) // Makes the image container circular
-                    .background(imageBackgroundColor),
-                contentAlignment = Alignment.Center
-            ) {
-                Image(
-                    painter = painterResource(id = imageResId),
-                    contentDescription = imageContentDescription,
-                    contentScale = ContentScale.Crop, // Or Fit, depending on your image
-                    modifier = Modifier.size((imageSize * 0.9).dp) // Image slightly smaller than its container
-                )
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            Text(
-                modifier = Modifier.padding(16.dp),
-                text = infoText,
-                style = MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurface // Text color appropriate for the surface
-            )
-        }
-    }
-}
-
-@Composable
-fun GuestMeasurementCard(
-    onThreeSitesClicked: () -> Unit,
-    onSevenSitesClicked: () -> Unit,
-    onClose: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .clickable {
-                onClose()
-            }
-            .background(Color.Black.copy(alpha = 0.6F)),
-        contentAlignment = Alignment.Center
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(32.dp),
-            contentAlignment = Alignment.Center
-        ) {
+            // Main content area: Drawn on top of the Scrim (if visible)
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 32.dp, vertical = 16.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(White)
-                    .clickable(interactionSource = null, indication = null) {}
+                    .fillMaxSize()
+                    .padding(paddingValues) // Apply scaffold padding first
+                    .padding(horizontal = 16.dp, vertical = 8.dp), // Then specific content padding
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Button(
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
-                    onClick = {
-                        onThreeSitesClicked()
-                    },
-                    shape = RoundedCornerShape(12.dp), // Optional: Rounded corners for the button
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
+                if (isLoading) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    CircularProgressIndicator()
+                } else {
+                    if (userProfile != null) {
+                        Text("Welcome, ${userProfile.name}!")
+                    } else {
+                        Text("No profile set up yet.")
+                    }
+
+                    LatestMeasurementCard(
+                        latestMeasurement = latestMeasurement
                     )
-                ) {
-                    Text(stringResource(R.string.three_sites_label))
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
-                    onClick = {
-                        onSevenSitesClicked()
-                    },
-                    shape = RoundedCornerShape(12.dp), // Optional: Rounded corners for the button
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
+
+                    LatestWeightEntryCard(
+                        latestWeightEntry = latestWeightEntry,
+                        recentWeightEntries = recentWeightEntries, // Pass the list here
+                        onAddWeightEntryClick = onNavigateToAddWeightEntry
                     )
-                ) {
-                    Text(stringResource(R.string.seven_sites_label))
                 }
+            }
+            if (isFabExpanded) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.White.copy(alpha = 0.6f)) // Changed to White
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null, // No ripple effect for scrim click
+                            onClick = { isFabExpanded = false }
+                        )
+                )
             }
         }
     }
 }
-
-fun getInfo(context: Context, bodyFatInfo: BodyFatInfo.Type?) =
-    when (bodyFatInfo) {
-        BodyFatInfo.Type.THREE_POINTS -> context.getString(R.string.three_sites_info)
-        BodyFatInfo.Type.SEVEN_POINTS -> context.getString(R.string.seven_sites_info)
-        null -> context.getString(R.string.guest_info)
-    }

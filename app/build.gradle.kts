@@ -62,6 +62,7 @@ dependencies {
     ksp(libs.dagger.compiler)
     implementation(libs.dagger.hilt.android)
     implementation(libs.gson)
+    implementation(libs.material3.icon)
 
     implementation(libs.coil)
 

@@ -21,7 +21,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lekan.bodyfattracker.R
-import com.lekan.bodyfattracker.model.BodyFatInfo
+import com.lekan.bodyfattracker.model.BodyFatMeasurement
 import com.lekan.bodyfattracker.ui.theme.BodyFatTrackerTheme
 import com.lekan.bodyfattracker.ui.theme.CircleBlue
 import com.lekan.bodyfattracker.ui.theme.Error
@@ -34,7 +34,7 @@ import com.lekan.bodyfattracker.ui.theme.OnSecondary
 
 @Composable
 fun HomeView(
-    lastInfo: BodyFatInfo?,
+    lastInfo: BodyFatMeasurement?,
     name: String? = null,
     goal: Int? = null,
     onStartThreeSites: () -> Unit = {},
@@ -72,10 +72,10 @@ fun HomeView(
             UserInfoOverview(
                 bodyFatPercentageString = stringResource(R.string.percentage_integer_format, lastInfo.percentage),
                 bodyFatLabelColor = color,
-                date = lastInfo.date,
+                date = "",
                 circleColor = Grey700,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                currentBodyFatValue = lastInfo.percentage,
+                currentBodyFatValue = lastInfo.percentage.toInt(),
                 bodyFatGoalValue = goal
             )
         }
@@ -149,41 +149,41 @@ fun HomeScreenPreview_NoLastInfo() {
         }
     }
 }
-
-@Preview(showBackground = true, name = "HomeScreen - With Last Info (Healthy)")
-@Composable
-fun HomeScreenPreview_WithLastInfoHealthy() {
-    BodyFatTrackerTheme {
-        Surface {
-            HomeView(
-                name = "Jake",
-                lastInfo = BodyFatInfo(
-                    percentage = 12, // Example: Healthy range
-                    date = "Oct 28, 2023",
-                    timeStamp = System.currentTimeMillis(),
-                    type = BodyFatInfo.Type.THREE_POINTS
-                )
-            )
-        }
-    }
-}
-
-@Preview(showBackground = true, name = "HomeScreen - With Last Info (High)")
-@Composable
-fun HomeScreenPreview_WithLastInfoHigh() {
-    BodyFatTrackerTheme {
-        Surface {
-            HomeView(
-                lastInfo = BodyFatInfo(
-                    percentage = 25, // Example: High range
-                    date = "Oct 29, 2023",
-                    timeStamp = System.currentTimeMillis(),
-                    type = BodyFatInfo.Type.SEVEN_POINTS
-                )
-            )
-        }
-    }
-}
+//
+//@Preview(showBackground = true, name = "HomeScreen - With Last Info (Healthy)")
+//@Composable
+//fun HomeScreenPreview_WithLastInfoHealthy() {
+//    BodyFatTrackerTheme {
+//        Surface {
+//            HomeView(
+//                name = "Jake",
+//                lastInfo = BodyFatMeasurement(
+//                    percentage = 12, // Example: Healthy range
+//                    date = "Oct 28, 2023",
+//                    timeStamp = System.currentTimeMillis(),
+//                    type = BodyFatMeasurement.Type.THREE_POINTS
+//                )
+//            )
+//        }
+//    }
+//}
+//
+//@Preview(showBackground = true, name = "HomeScreen - With Last Info (High)")
+//@Composable
+//fun HomeScreenPreview_WithLastInfoHigh() {
+//    BodyFatTrackerTheme {
+//        Surface {
+//            HomeView(
+//                lastInfo = BodyFatMeasurement(
+//                    percentage = 25, // Example: High range
+//                    date = "Oct 29, 2023",
+//                    timeStamp = System.currentTimeMillis(),
+//                    type = BodyFatMeasurement.Type.SEVEN_POINTS
+//                )
+//            )
+//        }
+//    }
+//}
 
 // Make sure these dummy composables are defined if they are not imported
 // or part of the same file. Remove them if they are already accessible.

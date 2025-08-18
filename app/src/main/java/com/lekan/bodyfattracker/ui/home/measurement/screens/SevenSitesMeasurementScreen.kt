@@ -52,7 +52,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.lekan.bodyfattracker.R
-import com.lekan.bodyfattracker.model.BodyFatInfo
+import com.lekan.bodyfattracker.model.BodyFatMeasurement
+import com.lekan.bodyfattracker.model.MeasurementMethod
 import com.lekan.bodyfattracker.ui.home.measurement.components.SevenSitesMeasureInput
 import com.lekan.bodyfattracker.ui.home.measurement.viewmodels.SevenSitesMeasurementViewModel
 import com.lekan.bodyfattracker.ui.theme.BodyFatTrackerTheme
@@ -152,7 +153,7 @@ fun SevenSitesMeasurementScreen(
 // to the one used in ThreeSitesMeasurementScreen
 @Composable
 fun CalculationResultSheet(
-    result: BodyFatInfo,
+    result: BodyFatMeasurement,
     accuracy: String? = null,
     modifier: Modifier = Modifier,
     onRecalculate: () -> Unit,
@@ -218,7 +219,7 @@ fun CalculationResultSheet(
             )
             Spacer(modifier = Modifier.height(32.dp))
             Text(
-                text = stringResource(R.string.calculation_date_label, result.date),
+                text = stringResource(R.string.calculation_date_label, result.timeStamp),
                 style = MaterialTheme.typography.bodyMedium
             )
             Spacer(modifier = Modifier.height(16.dp))
@@ -233,14 +234,14 @@ fun CalculationResultSheet(
             Text(
                 text = stringResource(
                     R.string.measurement_type_label,
-                    result.type.name.replace("_", " ")
+                    result.method.name.replace("_", " ")
                 ),
                 style = MaterialTheme.typography.bodyLarge
             )
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = getType(result.type),
+                text = getType(result.method),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -270,77 +271,78 @@ fun CalculationResultSheet(
 }
 
 @Composable
-fun getType(type: BodyFatInfo.Type): String = when (type) {
-    BodyFatInfo.Type.SEVEN_POINTS -> stringResource(R.string.measuring_type_seven_points)
-    BodyFatInfo.Type.THREE_POINTS -> stringResource(R.string.measuring_type_three_points)
+fun getType(type: MeasurementMethod): String = when (type) {
+    MeasurementMethod.SEVEN_POINTS -> stringResource(R.string.measuring_type_seven_points)
+    MeasurementMethod.THREE_POINTS -> stringResource(R.string.measuring_type_three_points)
+    else -> "Other"
 }
-
-@Preview(showBackground = true, name = "Calculation Result Sheet - 3 Points")
-@Composable
-fun CalculationResultSheetPreviewThreePoints() {
-    BodyFatTrackerTheme { // Apply your app's theme
-        Surface( // Surface provides a background color from the theme
-            modifier = Modifier
-                .fillMaxWidth()  // Add some padding around the sheet in the preview
-        ) {
-            CalculationResultSheet(
-                result = BodyFatInfo(
-                    percentage = 18,
-                    date = "15/07/2023 - 10:30",
-                    timeStamp = System.currentTimeMillis(),
-                    type = BodyFatInfo.Type.THREE_POINTS // Example with 3-points
-                ),
-                onRecalculate = { /* Preview: No action needed */ },
-                onClose = { /* Preview: No action needed */ },
-                accuracy = stringResource(R.string.seven_sites_accuracy)
-            )
-        }
-    }
-}
-
-@Preview(showBackground = true, name = "Calculation Result Sheet - 7 Points")
-@Composable
-fun CalculationResultSheetPreviewSevenPoints() {
-    BodyFatTrackerTheme {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-            CalculationResultSheet(
-                result = BodyFatInfo(
-                    percentage = 22,
-                    date = "16/07/2023 - 14:45",
-                    timeStamp = System.currentTimeMillis(),
-                    type = BodyFatInfo.Type.SEVEN_POINTS // Example with 7-points
-                ),
-                onRecalculate = {},
-                onClose = {}
-            )
-        }
-    }
-}
-
-@Preview(showBackground = true, name = "Calculation Result Sheet - Higher Percentage")
-@Composable
-fun CalculationResultSheetPreviewHighPercentage() {
-    BodyFatTrackerTheme {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-            CalculationResultSheet(
-                result = BodyFatInfo(
-                    percentage = 35,
-                    date = "17/07/2023 - 09:00",
-                    timeStamp = System.currentTimeMillis(),
-                    type = BodyFatInfo.Type.SEVEN_POINTS
-                ),
-                onRecalculate = {},
-                onClose = {}
-            )
-        }
-    }
-}
+//
+//@Preview(showBackground = true, name = "Calculation Result Sheet - 3 Points")
+//@Composable
+//fun CalculationResultSheetPreviewThreePoints() {
+//    BodyFatTrackerTheme { // Apply your app's theme
+//        Surface( // Surface provides a background color from the theme
+//            modifier = Modifier
+//                .fillMaxWidth()  // Add some padding around the sheet in the preview
+//        ) {
+//            CalculationResultSheet(
+//                result = BodyFatMeasurement(
+//                    percentage = 18,
+//                    date = "15/07/2023 - 10:30",
+//                    timeStamp = System.currentTimeMillis(),
+//                    type = BodyFatMeasurement.Type.THREE_POINTS // Example with 3-points
+//                ),
+//                onRecalculate = { /* Preview: No action needed */ },
+//                onClose = { /* Preview: No action needed */ },
+//                accuracy = stringResource(R.string.seven_sites_accuracy)
+//            )
+//        }
+//    }
+//}
+//
+//@Preview(showBackground = true, name = "Calculation Result Sheet - 7 Points")
+//@Composable
+//fun CalculationResultSheetPreviewSevenPoints() {
+//    BodyFatTrackerTheme {
+//        Surface(
+//            modifier = Modifier
+//                .fillMaxWidth()
+//        ) {
+//            CalculationResultSheet(
+//                result = BodyFatMeasurement(
+//                    percentage = 22,
+//                    date = "16/07/2023 - 14:45",
+//                    timeStamp = System.currentTimeMillis(),
+//                    type = BodyFatMeasurement.Type.SEVEN_POINTS // Example with 7-points
+//                ),
+//                onRecalculate = {},
+//                onClose = {}
+//            )
+//        }
+//    }
+//}
+//
+//@Preview(showBackground = true, name = "Calculation Result Sheet - Higher Percentage")
+//@Composable
+//fun CalculationResultSheetPreviewHighPercentage() {
+//    BodyFatTrackerTheme {
+//        Surface(
+//            modifier = Modifier
+//                .fillMaxWidth()
+//        ) {
+//            CalculationResultSheet(
+//                result = BodyFatMeasurement(
+//                    percentage = 35,
+//                    date = "17/07/2023 - 09:00",
+//                    timeStamp = System.currentTimeMillis(),
+//                    type = BodyFatMeasurement.Type.SEVEN_POINTS
+//                ),
+//                onRecalculate = {},
+//                onClose = {}
+//            )
+//        }
+//    }
+//}
 
 
 

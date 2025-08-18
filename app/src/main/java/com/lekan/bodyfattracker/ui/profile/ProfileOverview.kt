@@ -137,7 +137,7 @@ fun ProfileOverview(
 
         // Goal Section
         Text(
-            text = stringResource(R.string.your_goal_label), // New string
+            text = stringResource(R.string.body_fat_goal_optional_label), // New string
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 4.dp)

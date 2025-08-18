@@ -65,10 +65,11 @@
     <string name="close_button_desc">Close Button</string>
     <string name="profile_title">Profile</string>
     <string name="profile_picture_desc">Profile Picture</string>
-    <string name="create_profile_button_label">Create Profile</string>
+    <string name="create_profile_label">Create Profile</string>
+    <string name="edit_profile_label">Edit Profile</string>
     <string name="create_profile_prompt">When you create a profile, you will see your profile here</string>
     <string name="edit_profile_desc">Edit Profile</string>
-    <string name="your_goal_label">Your Goal</string>
+    <string name="body_fat_goal_optional_label">Your body fat goal</string>
     <string name="not_set_placeholder">not set</string>
     <string name="goal_progress_percentage">%1$d percent reached</string>
     <string name="your_bf_goal_label">Body fat goal : %1$d percent</string>
@@ -108,4 +109,5 @@
 
     <string name="privacy_policy_contact_title">Contact Us</string>
     <string name="privacy_policy_contact_content">If you have any questions about this Privacy Policy, please contact us at [Your Support Email or Contact Method Here].</string>
+    <string name="close_button">Close</string>
 </resources>

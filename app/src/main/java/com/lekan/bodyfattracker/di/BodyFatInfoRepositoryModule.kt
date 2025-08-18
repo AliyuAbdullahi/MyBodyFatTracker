@@ -1,30 +1,21 @@
 package com.lekan.bodyfattracker.di
 
-import android.content.Context
-import com.lekan.bodyfattracker.data.BodyFatInfoRepository
-import com.lekan.bodyfattracker.data.ProfileRepository
-import com.lekan.bodyfattracker.domain.IBodyFatInfoRepository
-import com.lekan.bodyfattracker.domain.IProfileRepository
+import com.lekan.bodyfattracker.data.BodyFatInfoRepository // Correct implementation
+import com.lekan.bodyfattracker.domain.IBodyFatInfoRepository // Interface to bind
+import dagger.Binds
 import dagger.Module
-import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-object BodyFatInfoRepositoryModule { // You had this object name in your file context
+abstract class BodyFatInfoRepositoryModule { // Changed from 'object' to 'abstract class'
 
-    @Provides
-    @Singleton
-    fun provideBodyFatInfoRepository(
-        @ApplicationContext context: Context
-    ): IBodyFatInfoRepository  = BodyFatInfoRepository(context)
-
-    @Provides
-    @Singleton
-    fun provideUserProfileRepository(
-        @ApplicationContext context: Context
-    ): IProfileRepository = ProfileRepository(context)
+    @Binds
+    @Singleton // Ensure the binding provides a singleton instance
+    abstract fun bindBodyFatInfoRepository(
+        bodyFatInfoRepository: BodyFatInfoRepository // Hilt knows how to create this
+        // (it has @Inject constructor and Dao dependency)
+    ): IBodyFatInfoRepository
 }

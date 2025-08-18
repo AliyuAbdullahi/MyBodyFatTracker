@@ -1,11 +1,12 @@
 package com.lekan.bodyfattracker.domain
 
-import com.lekan.bodyfattracker.model.BodyFatInfo
+import com.lekan.bodyfattracker.model.BodyFatMeasurement
+import kotlinx.coroutines.flow.Flow
 
 interface IBodyFatInfoRepository {
-    fun saveBodyFatInfoList(bodyFatInfoList: List<BodyFatInfo>)
-    fun getBodyFatInfoList(): List<BodyFatInfo>
-    fun addBodyFatInfo(bodyFatInfo: BodyFatInfo)
-    fun clearAllBodyFatInfo()
-    fun getLastBodyFatInfo(): BodyFatInfo?
+    fun getLatestMeasurement(): Flow<BodyFatMeasurement?>
+    fun getAllMeasurements(): Flow<List<BodyFatMeasurement>>
+    suspend fun saveMeasurement(measurement: BodyFatMeasurement): Long
+    suspend fun deleteMeasurementById(id: Long) // Added
+    suspend fun clearAllMeasurements()
 }
