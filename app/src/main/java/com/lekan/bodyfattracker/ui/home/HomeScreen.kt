@@ -1,6 +1,10 @@
 package com.lekan.bodyfattracker.ui.home
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -36,6 +40,9 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -45,18 +52,22 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.lekan.bodyfattracker.R
 import com.lekan.bodyfattracker.ui.home.components.LatestMeasurementCard
 import com.lekan.bodyfattracker.ui.home.components.LatestWeightEntryCard
 import com.lekan.bodyfattracker.ui.home.components.TimePickerDialog
+import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.Locale
 
@@ -72,6 +83,9 @@ fun HomeScreen(
     onStartSevenSitesGuest: () -> Unit
 ) {
     val uiState by viewModel.state.collectAsState()
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
     val isLoading = uiState.isLoading
     val userProfile = uiState.userProfile
     val latestMeasurement = uiState.latestMeasurement
@@ -104,7 +118,28 @@ fun HomeScreen(
         )
     }
 
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            viewModel.setReminderEnabled(true)
+            // Optionally, if no time is set, prompt to set time:
+            if (uiState.reminderHour == null || uiState.reminderMinute == null) {
+                showTimePickerDialog = true // Assuming showTimePickerDialog state exists
+            }
+        } else {
+            // Permission denied. Show a rationale to the user.
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    message = context.getString(R.string.notification_permission_denied_rationale),
+                    duration = SnackbarDuration.Long
+                )
+            }
+        }
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.welcome_user)) },
@@ -215,10 +250,34 @@ fun HomeScreen(
                                style = MaterialTheme.typography.titleMedium,
                                modifier = Modifier.weight(1F)
                            )
+                           // Inside the Row for the Reminder Switch:
                            Switch(
                                checked = uiState.isReminderEnabled,
-                               onCheckedChange = { viewModel.setReminderEnabled(it) }
+                               onCheckedChange = { desiredState ->
+                                   if (desiredState) { // Trying to enable the reminder
+                                       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                           when (ContextCompat.checkSelfPermission(
+                                               context,
+                                               Manifest.permission.POST_NOTIFICATIONS
+                                           )) {
+                                               PackageManager.PERMISSION_GRANTED -> {
+                                                   viewModel.setReminderEnabled(true)
+                                               }
+                                               else -> {
+                                                   // Launch the permission request
+                                                   permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                               }
+                                           }
+                                       } else {
+                                           viewModel.setReminderEnabled(true)
+                                       }
+                                   } else {
+                                       // Trying to disable the reminder
+                                       viewModel.setReminderEnabled(false)
+                                   }
+                               }
                            )
+
                        }
 
                         AnimatedVisibility(visible = uiState.isReminderEnabled) {
@@ -257,7 +316,8 @@ fun HomeScreen(
                     }
 
                     LatestMeasurementCard(
-                        latestMeasurement = latestMeasurement
+                        latestMeasurement = latestMeasurement,
+                        userProfile = uiState.userProfile
                     )
 
                     LatestWeightEntryCard(
@@ -282,4 +342,5 @@ fun HomeScreen(
         }
     }
 }
+
 

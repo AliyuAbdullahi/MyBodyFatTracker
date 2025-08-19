@@ -144,4 +144,12 @@
     <string name="welcome_user">Welcome back 😊</string>
     <string name="confirm">Confirm</string>
     <string name="cancel">Cancel</string>
+    <string name="goal_achieved_message_simple">Goal Achieved! (Target: %.1f%%)</string>
+    <string name="progress_towards_goal_message">Progress: %d%%(Current: %.1f%%, Goal: %.1f%%)</string>
+    <string name="goal_tracking_title">Goal Progress</string>
+    <string name="notification_permission_denied_rationale">Notification permission is needed to show reminders. Please enable it in app settings if you want to use this feature.\" (or similar).</string>
+    <string name="reminder_notification_channel_name">Measurement Reminders</string>
+    <string name="reminder_notification_channel_description">Channel for daily measurement reminders</string>
+    <string name="reminder_notification_title">Time to Record!</string>
+    <string name="reminder_notification_text">Don\'t forget to record your body fat and weight today.</string>
 </resources>
