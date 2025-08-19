@@ -65,6 +65,8 @@ dependencies {
     implementation(libs.material3.icon)
 
     implementation(libs.coil)
+    implementation(libs.coil.network)
+    implementation(libs.coil.compose)
 
     implementation(libs.ads)
     implementation(libs.chartCore)

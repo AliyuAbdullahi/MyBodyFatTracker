@@ -35,7 +35,7 @@
     <string name="caliper_image_description">Calliper</string>
     <string name="body_fat_percentage_result_label">Body fat Calculation result</string>
     <string name="measurement_type_label">Measurement Type</string>
-    <string name="calculation_date_label">Body fat</string>
+    <string name="calculation_date_label">Date: %1$s</string>
     <string name="recalculate_button_label">Recalculate</string>
     <string name="measuring_type_three_points">Three Points</string> <!-- Use %% for a literal % -->
     <string name="measuring_type_seven_points">Seven Points</string> <!-- Use %% for a literal % -->
@@ -152,4 +152,7 @@
     <string name="reminder_notification_channel_description">Channel for daily measurement reminders</string>
     <string name="reminder_notification_title">Time to Record!</string>
     <string name="reminder_notification_text">Don\'t forget to record your body fat and weight today.</string>
+    <string name="education_tab_title">Education &amp; Motivation</string>
+    <string name="error_loading_videos">Error loading videos: %1$s</string>
+    <string name="no_videos_available">No videos available at the moment.</string>
 </resources>

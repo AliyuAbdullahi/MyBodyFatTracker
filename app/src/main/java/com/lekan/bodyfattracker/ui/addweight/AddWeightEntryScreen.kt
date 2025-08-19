@@ -17,6 +17,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.lekan.bodyfattracker.model.WeightUnit
+import com.lekan.bodyfattracker.ui.home.Gender
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,13 +39,15 @@ fun AddWeightEntryScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Add New Weight Entry") },
+                windowInsets = WindowInsets(0),
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
-        }
+        },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -65,31 +68,42 @@ fun AddWeightEntryScreen(
 
             // Weight Unit Dropdown
             Box(modifier = Modifier.fillMaxWidth()) {
-                OutlinedTextField(
-                    value = uiState.selectedUnit.name, // Display enum name (KG, LBS)
-                    onValueChange = { /* Read Only */ },
-                    label = { Text("Unit") },
-                    readOnly = true,
-                    trailingIcon = { Icon(Icons.Filled.ArrowDropDown, "Select Unit") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { unitDropdownExpanded = true },
-                    isError = uiState.saveError?.contains("unit", ignoreCase = true) == true
-                )
-
-                DropdownMenu(
+                ExposedDropdownMenuBox(
                     expanded = unitDropdownExpanded,
-                    onDismissRequest = { unitDropdownExpanded = false },
+                    onExpandedChange = { unitDropdownExpanded = it },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    WeightUnit.entries.forEach { unit ->
-                        DropdownMenuItem(
-                            text = { Text(unit.name) },
-                            onClick = {
-                                viewModel.onUnitSelected(unit)
-                                unitDropdownExpanded = false
+                    OutlinedTextField(
+                        value = uiState.selectedUnit.name, // Display enum name (KG, LBS)
+                        onValueChange = { /* Read Only */ },
+                        label = { Text("Unit") },
+                        readOnly = true,
+                        trailingIcon = {
+                            IconButton(
+                                onClick = { unitDropdownExpanded = true }
+                            ) {
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = unitDropdownExpanded)
                             }
-                        )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { unitDropdownExpanded = !unitDropdownExpanded },
+                        isError = uiState.saveError?.contains("unit", ignoreCase = true) == true
+                    )
+
+                    ExposedDropdownMenu(
+                        expanded = unitDropdownExpanded,
+                        onDismissRequest = { unitDropdownExpanded = false }
+                    ) {
+                        WeightUnit.entries.forEach { unit ->
+                            DropdownMenuItem(
+                                text = { Text(unit.name) }, // Ensure Gender enum has displayName
+                                onClick = {
+                                    viewModel.onUnitSelected(unit)
+                                    unitDropdownExpanded = false
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -99,7 +113,9 @@ fun AddWeightEntryScreen(
                 onValueChange = viewModel::onNotesChange,
                 label = { Text("Notes (Optional)") },
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp), // Make it a bit taller for notes
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 80.dp), // Make it a bit taller for notes
             )
 
             if (uiState.saveError != null) {

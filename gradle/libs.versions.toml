@@ -52,7 +52,10 @@ dagger-compiler = { module = "com.google.dagger:hilt-android-compiler", version.
 dagger-hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "daggerHilt" }
 dagger-hilt-navigation = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "hiltNavigation" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gsonVersion" }
-coil = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilVersion" }
+coil = { module = "io.coil-kt.coil3:coil", version.ref = "coilVersion" }
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilVersion" }
+coil-network = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coilVersion" }
+coil-gif = { module = "io.coil-kt.coil3:coil-gif", version.ref = "coilVersion" }
 ads = { module = "com.google.android.gms:play-services-ads", version.ref = "adsVersion" }
 chartCore = { module = "com.patrykandpatrick.vico:core", version.ref = "chartCoreVersion" }
 chartCompose = { module = "com.patrykandpatrick.vico:compose-m3", version.ref = "chartCoreVersion" }

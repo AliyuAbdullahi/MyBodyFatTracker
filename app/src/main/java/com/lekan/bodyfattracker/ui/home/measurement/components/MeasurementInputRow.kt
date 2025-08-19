@@ -70,7 +70,7 @@ fun MeasurementInputRow(
         Image(
             painter = painterResource(id = imageResId),
             contentDescription = imageContentDescription,
-            modifier = Modifier.size(48.dp),
+            modifier = Modifier.clip(RoundedCornerShape(4.dp)).size(48.dp),
             contentScale = ContentScale.FillBounds
         )
         Spacer(modifier = Modifier.width(16.dp))

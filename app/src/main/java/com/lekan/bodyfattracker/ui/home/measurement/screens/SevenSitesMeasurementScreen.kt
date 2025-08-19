@@ -57,6 +57,9 @@ import com.lekan.bodyfattracker.model.MeasurementMethod
 import com.lekan.bodyfattracker.ui.home.measurement.components.SevenSitesMeasureInput
 import com.lekan.bodyfattracker.ui.home.measurement.viewmodels.SevenSitesMeasurementViewModel
 import com.lekan.bodyfattracker.ui.theme.BodyFatTrackerTheme
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -218,13 +221,16 @@ fun CalculationResultSheet(
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(32.dp))
+            val sdf = SimpleDateFormat("MMM dd, yyyy - hh:mm a", Locale.getDefault())
+            val formattedDate = sdf.format(Date(result.timeStamp))
             Text(
-                text = stringResource(R.string.calculation_date_label, result.timeStamp),
+                text = stringResource(R.string.calculation_date_label, formattedDate),
                 style = MaterialTheme.typography.bodyMedium
             )
             Spacer(modifier = Modifier.height(16.dp))
+
             Text(
-                text = "${result.percentage}%",
+                text = "${String.format(locale = Locale.getDefault(), "%.1f", result.percentage)}%",
                 style = MaterialTheme.typography.displayMedium,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(vertical = 8.dp)

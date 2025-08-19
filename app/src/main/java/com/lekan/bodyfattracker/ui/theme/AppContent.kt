@@ -25,15 +25,13 @@ import androidx.navigation3.runtime.rememberSavedStateNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import androidx.navigation3.ui.rememberSceneSetupNavEntryDecorator
 import com.lekan.bodyfattracker.ui.addweight.AddWeightEntryScreen
+import com.lekan.bodyfattracker.ui.education.EducationScreen
+// import com.lekan.bodyfattracker.ui.education.EducationScreen // Will be added later
 import com.lekan.bodyfattracker.ui.history.HistoryScreen
 import com.lekan.bodyfattracker.ui.home.HomeScreen
 import com.lekan.bodyfattracker.ui.home.measurement.screens.SevenSitesMeasurementScreen
 import com.lekan.bodyfattracker.ui.home.measurement.screens.ThreeSitesMeasurementScreen
 import com.lekan.bodyfattracker.ui.profile.ProfileScreen
-
-// Assume you will create these screens and their Screen objects are now defined:
-// import com.lekan.bodyfattracker.ui.addmeasurement.AddMeasurementScreen
-// import com.lekan.bodyfattracker.ui.addweight.AddWeightEntryScreen
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
@@ -41,8 +39,7 @@ fun AppContent(
     navigationViewModel: NavViewModel = hiltViewModel(),
     modifier: Modifier = Modifier.fillMaxSize()
 ) {
-    val navItems = listOf(Screen.Home, Screen.History, Screen.Profile)
-    val current = navigationViewModel.backStack.last()
+    val navItems = listOf(Screen.Home, Screen.Education, Screen.History, Screen.Profile) // Updated navItems
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -85,6 +82,9 @@ fun AppContent(
                             }
                         )
                     }
+                    entry<Screen.Education> { // Added placeholder for EducationScreen
+                        EducationScreen()
+                    }
                     entry<Screen.History> { HistoryScreen() }
                     entry<Screen.Profile> { ProfileScreen() }
                     entry<Screen.ThreeSitesMeasurement> { navKey ->
@@ -102,16 +102,12 @@ fun AppContent(
 
                     // Entries for the new screens using the defined Screen objects
                     entry<Screen.AddMeasurementScreen> { navKey ->
-                        // TODO: Replace with your actual AddMeasurementScreen Composable
-                        // Example: AddMeasurementScreen(navKey = navKey, onNavigateUp = { navigationViewModel.popLast() })
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             Text("Placeholder for Add Measurement Screen (${navKey.label})")
                         }
                     }
 
                     entry<Screen.AddWeightEntryScreen> { navKey ->
-                        // TODO: Replace with your actual AddWeightEntryScreen Composable
-                        // Example: AddWeightEntryScreen(navKey = navKey, onNavigateUp = { navigationViewModel.popLast() })
                         AddWeightEntryScreen(
                             onNavigateUp = { navigationViewModel.popLast() }
                         )
