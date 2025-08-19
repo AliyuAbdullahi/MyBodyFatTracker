@@ -14,26 +14,32 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.FitnessCenter // Assuming this resolves, or we'll change it
-import androidx.compose.material.icons.filled.SquareFoot   // Assuming this resolves, or we'll change it
-import androidx.compose.material.icons.filled.Straighten   // Assuming this resolves, or we'll change it
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.SquareFoot
+import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -44,18 +50,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.lekan.bodyfattracker.model.WeightEntry // Required for the new parameter
+import com.lekan.bodyfattracker.R
 import com.lekan.bodyfattracker.ui.home.components.LatestMeasurementCard
 import com.lekan.bodyfattracker.ui.home.components.LatestWeightEntryCard
+import com.lekan.bodyfattracker.ui.home.components.TimePickerDialog
+import java.util.Calendar
+import java.util.Locale
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
-    onNavigateToAddMeasurement: () -> Unit,
     onNavigateToAddWeightEntry: () -> Unit,
     onStartSevenSites: () -> Unit,
     onStartThreeSites: () -> Unit,
@@ -67,15 +76,40 @@ fun HomeScreen(
     val userProfile = uiState.userProfile
     val latestMeasurement = uiState.latestMeasurement
     val latestWeightEntry = uiState.latestWeightEntry
-    val recentWeightEntries = uiState.recentWeightEntries // Extract recent entries
+    val recentWeightEntries = uiState.recentWeightEntries
 
     var isFabExpanded by remember { mutableStateOf(false) }
     val fabRotation by animateFloatAsState(targetValue = if (isFabExpanded) 45f else 0f, label = "fab_rotation")
 
+    var showTimePickerDialog by remember { mutableStateOf(false) }
+
+    if (showTimePickerDialog) {
+        val currentTime = Calendar.getInstance()
+        val initialHour = uiState.reminderHour ?: currentTime.get(Calendar.HOUR_OF_DAY)
+        val initialMinute = uiState.reminderMinute ?: currentTime.get(Calendar.MINUTE)
+        val timePickerState = rememberTimePickerState(
+            initialHour = initialHour,
+            initialMinute = initialMinute,
+            // Consider making is24Hour configurable or based on system settings
+            is24Hour = false
+        )
+
+        TimePickerDialog(
+            onCancel = { showTimePickerDialog = false },
+            onConfirm = { calendar ->
+                viewModel.updateReminderTime(calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE))
+                showTimePickerDialog = false
+            },
+            timeState = timePickerState
+        )
+    }
+
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Body Fat Tracker") },
-                windowInsets = WindowInsets(0),)
+            TopAppBar(
+                title = { Text(stringResource(R.string.welcome_user)) },
+                windowInsets = WindowInsets(0),
+            )
         },
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         floatingActionButton = {
@@ -121,7 +155,7 @@ fun HomeScreen(
                         )
                         ExtendedFloatingActionButton(
                             onClick = {
-                                onStartThreeSitesGuest() // New action
+                                onStartThreeSitesGuest()
                                 isFabExpanded = false
                             },
                             icon = { Icon(Icons.Filled.SquareFoot, "Add 3-Site Guest Measurement") },
@@ -130,7 +164,7 @@ fun HomeScreen(
                         )
                         ExtendedFloatingActionButton(
                             onClick = {
-                                onStartSevenSitesGuest() // New action
+                                onStartSevenSitesGuest()
                                 isFabExpanded = false
                             },
                             icon = { Icon(Icons.Filled.Straighten, "Add 7-Site Guest Measurement") },
@@ -153,15 +187,12 @@ fun HomeScreen(
             }
         }
     ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize()) { // Outer Box for Scrim (if any) and Content
-            // Scrim: Drawn first, so it's behind the main content if visible
-
-            // Main content area: Drawn on top of the Scrim (if visible)
+        Box(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues) // Apply scaffold padding first
-                    .padding(horizontal = 16.dp, vertical = 8.dp), // Then specific content padding
+                    .padding(paddingValues)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
@@ -170,9 +201,59 @@ fun HomeScreen(
                     CircularProgressIndicator()
                 } else {
                     if (userProfile != null) {
-                        Text("Welcome, ${userProfile.name}!")
+                        HorizontalDivider()
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Reminder Section
+                       Row (
+                           modifier = Modifier.fillMaxWidth(),
+                           verticalAlignment = Alignment.CenterVertically,
+                           horizontalArrangement = Arrangement.SpaceBetween
+                       ){
+                           Text(
+                               text = stringResource(R.string.measurement_reminder_title),
+                               style = MaterialTheme.typography.titleMedium,
+                               modifier = Modifier.weight(1F)
+                           )
+                           Switch(
+                               checked = uiState.isReminderEnabled,
+                               onCheckedChange = { viewModel.setReminderEnabled(it) }
+                           )
+                       }
+
+                        AnimatedVisibility(visible = uiState.isReminderEnabled) {
+                            Column {
+                                Spacer(modifier = Modifier.height(4.dp)) // Changed from 8.dp
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable(onClick = { showTimePickerDialog = true })
+                                        .padding(vertical = 4.dp), // Changed from 8.dp
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    val timeText = if (uiState.reminderHour != null && uiState.reminderMinute != null) {
+                                        String.format(Locale.getDefault(), "%02d:%02d", uiState.reminderHour, uiState.reminderMinute)
+                                    } else {
+                                        stringResource(R.string.set_reminder_time_action)
+                                    }
+                                    Text(
+                                        text = stringResource(R.string.reminder_set_for_prefix, timeText),
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Filled.Edit,
+                                        contentDescription = stringResource(R.string.set_reminder_time_action),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        HorizontalDivider()
+                        Spacer(modifier = Modifier.height(8.dp))
                     } else {
-                        Text("No profile set up yet.")
+                        Text(stringResource(R.string.no_profile_setup))
                     }
 
                     LatestMeasurementCard(
@@ -181,7 +262,7 @@ fun HomeScreen(
 
                     LatestWeightEntryCard(
                         latestWeightEntry = latestWeightEntry,
-                        recentWeightEntries = recentWeightEntries, // Pass the list here
+                        recentWeightEntries = recentWeightEntries,
                         onAddWeightEntryClick = onNavigateToAddWeightEntry
                     )
                 }
@@ -190,10 +271,10 @@ fun HomeScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.White.copy(alpha = 0.6f)) // Changed to White
+                        .background(Color.White.copy(alpha = 0.6f))
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
-                            indication = null, // No ripple effect for scrim click
+                            indication = null,
                             onClick = { isFabExpanded = false }
                         )
                 )
@@ -201,3 +282,4 @@ fun HomeScreen(
         }
     }
 }
+

@@ -80,9 +80,6 @@ fun AppContent(
                             onStartSevenSitesGuest = {
                                 navigationViewModel.push(Screen.SevenSitesMeasurement(canSave = false))
                             },
-                            onNavigateToAddMeasurement = {
-                                navigationViewModel.push(Screen.AddMeasurementScreen)
-                            },
                             onNavigateToAddWeightEntry = {
                                 navigationViewModel.push(Screen.AddWeightEntryScreen)
                             }

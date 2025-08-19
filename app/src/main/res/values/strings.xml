@@ -135,4 +135,13 @@
     <string name="show_body_fat_chart">Show body fat trend</string>
     <string name="hide_weight_chart">Hide weight trend</string>
     <string name="show_weight_chart">Show weight trend</string>
+    <string name="body_fat_tracker">Body Fat Tracker</string>
+    <string name="enable_reminder_label">Enable Reminder</string>
+    <string name="measurement_reminder_title">Enable Measurement Reminder</string>
+    <string name="set_reminder_time_action">Set reminder time</string>
+    <string name="reminder_set_for_prefix">Reminder set for : %1$s</string>
+    <string name="no_profile_setup">No Profile setup yet</string>
+    <string name="welcome_user">Welcome back 😊</string>
+    <string name="confirm">Confirm</string>
+    <string name="cancel">Cancel</string>
 </resources>
