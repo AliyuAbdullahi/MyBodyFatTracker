@@ -158,4 +158,10 @@
     <string name="progress_trends_title">Progress Trends</string>
     <string name="show_charts_section">Show charts section</string>
     <string name="hide_charts_section">Hide charts section</string>
+    <string name="add_education_video_fab_cd">Add new education video</string>
+    <string name="add_video_dialog_title">Add New Video</string>
+    <string name="video_title_label">Video Title</string>
+    <string name="video_url_label">YouTube Video URL</string>
+    <string name="add_button">Add</string>
+    <string name="cancel_button">Cancel</string>
 </resources>
