@@ -131,16 +131,18 @@ fun ThreeSitesMeasurementScreen(
                         .clickable(enabled = false, onClick = {}),
                     contentAlignment = Alignment.BottomCenter
                 ) {
-                    CalculationResultSheet(
-                        result = uiState.calculationResult!!,
-                        onRecalculate = {
-                            viewModel.resetFormAndResult()
-                        },
-                        onClose = {
-                            viewModel.closeResultForm()
-                        },
-                        accuracy = stringResource(R.string.three_sites_accuracy)
-                    )
+                    uiState.calculationResult?.let { result ->
+                        CalculationResultSheet(
+                            result = result,
+                            onRecalculate = {
+                                viewModel.resetFormAndResult()
+                            },
+                            onClose = {
+                                viewModel.closeResultForm()
+                            },
+                            accuracy = stringResource(R.string.three_sites_accuracy)
+                        )
+                    }
                 }
             }
         }

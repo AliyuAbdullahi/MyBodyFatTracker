@@ -155,4 +155,7 @@
     <string name="education_tab_title">Education &amp; Motivation</string>
     <string name="error_loading_videos">Error loading videos: %1$s</string>
     <string name="no_videos_available">No videos available at the moment.</string>
+    <string name="progress_trends_title">Progress Trends</string>
+    <string name="show_charts_section">Show charts section</string>
+    <string name="hide_charts_section">Hide charts section</string>
 </resources>

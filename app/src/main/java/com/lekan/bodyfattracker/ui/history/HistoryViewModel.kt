@@ -37,8 +37,9 @@ data class HistoryUiState(
     val showConfirmDeleteDialog: Boolean = false,
     val bodyFatChartEntries: List<Pair<Long, Float>> = emptyList(), // Updated
     val weightChartEntries: List<Pair<Long, Float>> = emptyList(),// Updated
-    val showBodyFatChart: Boolean = true, // Initialized
-    val showWeightChart: Boolean = true
+    val showBodyFatChart: Boolean = true,
+    val showWeightChart: Boolean = true,
+    val showChartsSection: Boolean = true // Added for master toggle
 )
 
 @HiltViewModel
@@ -55,10 +56,11 @@ class HistoryViewModel @Inject constructor(
             isLoading = true,
             itemPendingDelete = null,
             showConfirmDeleteDialog = false,
-            bodyFatChartEntries = emptyList(), // Initialized
-            weightChartEntries = emptyList(),    // Initialized
+            bodyFatChartEntries = emptyList(),
+            weightChartEntries = emptyList(),
             showWeightChart = true,
-            showBodyFatChart = true
+            showBodyFatChart = true,
+            showChartsSection = false
         )
     )
 
@@ -109,9 +111,13 @@ class HistoryViewModel @Inject constructor(
             groupedHistoryItems = groupedItems,
             selectedFilter = currentFilter,
             selectedSortOption = currentSortOption,
-            bodyFatChartEntries = finalBodyFatChartEntries, // Updated
-            weightChartEntries = finalWeightChartEntries    // Updated
-            // itemPendingDelete, showConfirmDeleteDialog, and error are preserved from currentUiInternalState
+            bodyFatChartEntries = finalBodyFatChartEntries, 
+            weightChartEntries = finalWeightChartEntries,
+            // showChartsSection is preserved from currentUiInternalState initially
+            // and modified by its own toggle or individual chart toggles
+            showChartsSection = currentUiInternalState.showChartsSection,
+            showBodyFatChart = currentUiInternalState.showBodyFatChart,
+            showWeightChart = currentUiInternalState.showWeightChart
         )
     }.stateIn(
         scope = viewModelScope,
@@ -200,15 +206,29 @@ class HistoryViewModel @Inject constructor(
         }
     }
 
+    fun toggleChartsSectionVisibility() {
+        _uiState.update { currentState ->
+            currentState.copy(showChartsSection = !currentState.showChartsSection)
+        }
+    }
+
     fun toggleBodyFatChartVisibility() {
         _uiState.update { currentState ->
-            currentState.copy(showBodyFatChart = !currentState.showBodyFatChart)
+            val newShowBodyFatChart = !currentState.showBodyFatChart
+            currentState.copy(
+                showBodyFatChart = newShowBodyFatChart,
+                showChartsSection = if (newShowBodyFatChart) true else currentState.showChartsSection
+            )
         }
     }
 
     fun toggleWeightChartVisibility() {
         _uiState.update { currentState ->
-            currentState.copy(showWeightChart = !currentState.showWeightChart)
+            val newShowWeightChart = !currentState.showWeightChart
+            currentState.copy(
+                showWeightChart = newShowWeightChart,
+                showChartsSection = if (newShowWeightChart) true else currentState.showChartsSection
+            )
         }
     }
 }

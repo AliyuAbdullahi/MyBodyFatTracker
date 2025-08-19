@@ -3,6 +3,7 @@ package com.lekan.bodyfattracker.ui.history
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +23,8 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.EditNote
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Percent
 import androidx.compose.material.icons.filled.Visibility
@@ -80,7 +83,8 @@ fun HistoryScreen(
         onConfirmPendingDelete = viewModel::confirmPendingDelete,
         onCancelDeleteConfirmation = viewModel::cancelDeleteConfirmation,
         onToggleWeightChartVisibility = viewModel::toggleWeightChartVisibility,
-        onToggleBodyFatChartVisibility = viewModel::toggleBodyFatChartVisibility
+        onToggleBodyFatChartVisibility = viewModel::toggleBodyFatChartVisibility,
+        onToggleChartsSectionVisibility = viewModel::toggleChartsSectionVisibility // Added
     )
 }
 
@@ -95,6 +99,7 @@ fun HistoryViewContent(
     onCancelDeleteConfirmation: () -> Unit,
     onToggleBodyFatChartVisibility: () -> Unit = {},
     onToggleWeightChartVisibility: () -> Unit = {},
+    onToggleChartsSectionVisibility: () -> Unit = {}, // Added
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxSize()) {
@@ -108,8 +113,33 @@ fun HistoryViewContent(
                 .padding(16.dp)
         )
 
-        // Charts Section
+        // Master toggle for the entire charts section
         if (uiState.bodyFatChartEntries.isNotEmpty() || uiState.weightChartEntries.isNotEmpty()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onToggleChartsSectionVisibility)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = stringResource(R.string.progress_trends_title), // You'll need to add this string resource
+                    style = MaterialTheme.typography.titleLarge
+                )
+                IconButton(onClick = onToggleChartsSectionVisibility) {
+                    Icon(
+                        imageVector = if (uiState.showChartsSection) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                        contentDescription = stringResource(
+                            if (uiState.showChartsSection) R.string.hide_charts_section else R.string.show_charts_section
+                        ) // Add these string resources
+                    )
+                }
+            }
+        }
+
+        // Charts Section - Conditionally displayed based on master toggle and data availability
+        if (uiState.showChartsSection && (uiState.bodyFatChartEntries.isNotEmpty() || uiState.weightChartEntries.isNotEmpty())) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -150,7 +180,7 @@ fun HistoryViewContent(
 
                 if (uiState.weightChartEntries.isNotEmpty()) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = if (uiState.bodyFatChartEntries.isNotEmpty()) 8.dp else 0.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = if (uiState.bodyFatChartEntries.isNotEmpty() && uiState.showBodyFatChart) 8.dp else 0.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
@@ -179,7 +209,7 @@ fun HistoryViewContent(
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp)) // This spacer is also part of the conditional charts section
         }
 
 
@@ -526,7 +556,8 @@ fun WeightHistoryCard(
 fun HistoryViewPreview_Populated_Charts_DialogHidden() {
     HistoryViewPreview_Populated_WithChartsAndDialogState(
         showDialog = false,
-        itemIsMeasurement = true
+        itemIsMeasurement = true,
+        showChartsSection = true // Added for preview consistency
     )
 }
 
@@ -535,14 +566,16 @@ fun HistoryViewPreview_Populated_Charts_DialogHidden() {
 fun HistoryViewPreview_Populated_Charts_DialogShown_Measurement() {
     HistoryViewPreview_Populated_WithChartsAndDialogState(
         showDialog = true,
-        itemIsMeasurement = true
+        itemIsMeasurement = true,
+        showChartsSection = true // Added for preview consistency
     )
 }
 
 @Composable
 private fun HistoryViewPreview_Populated_WithChartsAndDialogState(
     showDialog: Boolean,
-    itemIsMeasurement: Boolean
+    itemIsMeasurement: Boolean,
+    showChartsSection: Boolean // Added for preview consistency
 ) {
     BodyFatTrackerTheme {
         val sampleTime = System.currentTimeMillis()
@@ -598,7 +631,10 @@ private fun HistoryViewPreview_Populated_WithChartsAndDialogState(
             itemPendingDelete = itemToDeleteForPreview,
             showConfirmDeleteDialog = showDialog,
             bodyFatChartEntries = sampleBfChartData,
-            weightChartEntries = sampleWtChartData
+            weightChartEntries = sampleWtChartData,
+            showChartsSection = showChartsSection, // Added for preview consistency
+            showBodyFatChart = true, // Ensure individual charts are on for preview if section is on
+            showWeightChart = true   // Ensure individual charts are on for preview if section is on
         )
         HistoryViewContent(
             uiState = sampleUiState,
@@ -606,7 +642,8 @@ private fun HistoryViewPreview_Populated_WithChartsAndDialogState(
             onSetSortOption = {},
             onRequestDeleteConfirmation = {},
             onConfirmPendingDelete = {},
-            onCancelDeleteConfirmation = {}
+            onCancelDeleteConfirmation = {},
+            onToggleChartsSectionVisibility = {} // Added for preview
         )
     }
 }
@@ -638,13 +675,15 @@ fun HistoryViewPreview_Empty() {
                 isLoading = false,
                 groupedHistoryItems = emptyMap(),
                 bodyFatChartEntries = emptyList(), // Ensure chart data is empty
-                weightChartEntries = emptyList()   // Ensure chart data is empty
+                weightChartEntries = emptyList(),   // Ensure chart data is empty
+                showChartsSection = false // Charts section hidden in empty preview
             ),
             onSetFilter = {},
             onSetSortOption = {},
             onRequestDeleteConfirmation = {},
             onConfirmPendingDelete = {},
-            onCancelDeleteConfirmation = {}
+            onCancelDeleteConfirmation = {},
+            onToggleChartsSectionVisibility = {} // Added for preview
         )
     }
 }
@@ -657,13 +696,15 @@ fun HistoryViewPreview_Loading() {
             uiState = HistoryUiState(
                 isLoading = true,
                 bodyFatChartEntries = emptyList(),
-                weightChartEntries = emptyList()
+                weightChartEntries = emptyList(),
+                showChartsSection = false // Charts section hidden during loading
             ),
             onSetFilter = {},
             onSetSortOption = {},
             onRequestDeleteConfirmation = {},
             onConfirmPendingDelete = {},
-            onCancelDeleteConfirmation = {}
+            onCancelDeleteConfirmation = {},
+            onToggleChartsSectionVisibility = {} // Added for preview
         )
     }
 }

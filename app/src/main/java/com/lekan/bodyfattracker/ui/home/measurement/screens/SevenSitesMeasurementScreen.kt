@@ -166,14 +166,14 @@ fun CalculationResultSheet(
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.6F))
+            .background(Color.Black.copy(alpha = 0.8F))
     ) {
         // Removed BoxWithConstraints, Column is now the direct root of the sheet's content
         val density = LocalDensity.current
 
         val height: Dp = with(density) {
             // Extension function on Density to convert pixels (Float) to Dp
-            (constraints.maxHeight * 0.7).toInt().toDp()
+            (constraints.maxHeight * 0.8).toInt().toDp()
         }
         Column(
             modifier = Modifier
