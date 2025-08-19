@@ -5,6 +5,8 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.serialization)
     alias(libs.plugins.dagger.hilt)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.firebase.google.service)
+    alias(libs.plugins.crashlytics)
 }
 
 android {
@@ -75,6 +77,10 @@ dependencies {
     implementation(libs.room.ktx)
     implementation(libs.datastore)
     ksp(libs.room.compiler)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+    implementation(libs.crashlytics.ndk)
+    implementation(libs.firebase.firestore)
 
 
     testImplementation(libs.junit)

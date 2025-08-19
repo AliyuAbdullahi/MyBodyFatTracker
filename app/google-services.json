@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "220281637793",
+    "project_id": "bodyfattracker",
+    "storage_bucket": "bodyfattracker.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:220281637793:android:2ed1847f8e44752f6b99e0",
+        "android_client_info": {
+          "package_name": "com.lekan.bodyfattracker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7v0yYIrJqlGd4MtMeh-3X0yRHVZrLuKw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
