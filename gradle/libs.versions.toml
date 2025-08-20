@@ -25,6 +25,7 @@ dataStoreVersion = "1.1.7"
 firebaseGoogleServiceVersion = "4.4.3"
 firebaseBomVersion = "34.1.0"
 crashlytics = "3.0.6"
+youtubePlayerVersion = "12.1.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -71,7 +72,7 @@ firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "fir
 firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
 crashlytics-ndk = { module = "com.google.firebase:firebase-crashlytics-ndk" }
 firebase-firestore = { module = "com.google.firebase:firebase-firestore" }
-
+youtube = { module = "com.pierfrancescosoffritti.androidyoutubeplayer:core", version.ref = "youtubePlayerVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
