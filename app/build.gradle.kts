@@ -81,6 +81,7 @@ dependencies {
     implementation(libs.firebase.analytics)
     implementation(libs.crashlytics.ndk)
     implementation(libs.firebase.firestore)
+    implementation(libs.youtube)
 
 
     testImplementation(libs.junit)

@@ -2,6 +2,7 @@ package com.lekan.bodyfattracker.ui.theme
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -26,25 +27,26 @@ import androidx.navigation3.ui.NavDisplay
 import androidx.navigation3.ui.rememberSceneSetupNavEntryDecorator
 import com.lekan.bodyfattracker.ui.addweight.AddWeightEntryScreen
 import com.lekan.bodyfattracker.ui.education.EducationScreen
-// import com.lekan.bodyfattracker.ui.education.EducationScreen // Will be added later
+import com.lekan.bodyfattracker.ui.education.YoutubePlayerScreen
 import com.lekan.bodyfattracker.ui.history.HistoryScreen
 import com.lekan.bodyfattracker.ui.home.HomeScreen
 import com.lekan.bodyfattracker.ui.home.measurement.screens.SevenSitesMeasurementScreen
 import com.lekan.bodyfattracker.ui.home.measurement.screens.ThreeSitesMeasurementScreen
 import com.lekan.bodyfattracker.ui.profile.ProfileScreen
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AppContent(
-    navigationViewModel: NavViewModel = hiltViewModel(),
-    modifier: Modifier = Modifier.fillMaxSize()
+    navigationViewModel: NavViewModel = hiltViewModel()
 ) {
     val navItems = listOf(Screen.Home, Screen.Education, Screen.History, Screen.Profile) // Updated navItems
 
     Scaffold(
-        modifier = modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            BFCNavigationBar(navigationViewModel = navigationViewModel, navItems = navItems)
+            AnimatedVisibility(visible = navigationViewModel.backStack.last() in navItems) {
+                BFCNavigationBar(navigationViewModel = navigationViewModel, navItems = navItems)
+            }
         }
     ) { innerPadding ->
         Column(
@@ -54,7 +56,6 @@ fun AppContent(
         ) {
             NavDisplay(
                 backStack = navigationViewModel.backStack,
-                modifier = modifier,
                 transitionSpec = {
                     fadeIn(tween(300)) togetherWith fadeOut(tween(300))
                 },
@@ -83,7 +84,9 @@ fun AppContent(
                         )
                     }
                     entry<Screen.Education> { // Added placeholder for EducationScreen
-                        EducationScreen()
+                        EducationScreen {
+                            navigationViewModel.push(Screen.YoutubePlayer(it))
+                        }
                     }
                     entry<Screen.History> { HistoryScreen() }
                     entry<Screen.Profile> { ProfileScreen() }
@@ -111,6 +114,10 @@ fun AppContent(
                         AddWeightEntryScreen(
                             onNavigateUp = { navigationViewModel.popLast() }
                         )
+                    }
+
+                    entry<Screen.YoutubePlayer> { youtubeId ->
+                        YoutubePlayerScreen(videoId = youtubeId.videoId, onNavigateUp = { navigationViewModel.popLast() })
                     }
                 }
             )

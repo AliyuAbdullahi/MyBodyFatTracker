@@ -16,9 +16,12 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector?
     data object Education : Screen("education", "Education", Icons.Filled.School) // Added Education screen
 
     data class ThreeSitesMeasurement(val canSave: Boolean = false) : Screen("three_sites_measurement", "Three Sites Measurement")
-    data class SevenSitesMeasurement(val canSave: Boolean = false) : Screen("five_sites_measurement", "Five Sites Measurement") // Corrected from "five_sites_measurement" in original file for consistency if intended for 7 sites.
+    data class SevenSitesMeasurement(val canSave: Boolean = false) : Screen("seven_sites_measurement", "Seven Sites Measurement") // Corrected route
 
     // Added new screen definitions
     data object AddMeasurementScreen : Screen("add_measurement", "Add Measurement", Icons.Filled.AddCircle)
     data object AddWeightEntryScreen : Screen("add_weight_entry", "Add Weight", Icons.Filled.List)
+
+    // Screen for playing YouTube videos
+    data class YoutubePlayer(val videoId: String) : Screen("youtube_player", "Video Player")
 }

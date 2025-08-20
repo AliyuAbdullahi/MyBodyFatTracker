@@ -170,4 +170,6 @@
     <string name="unbookmark_video_cd">Remove bookmark</string>
     <string name="delete_saved_video_cd">Delete saved video</string>
     <string name="no_saved_videos">You haven\'t saved any videos yet.</string>
+    <string name="video_player">Video Player</string>
+    <string name="search_videos_placeholder">Search videos…</string>
 </resources>

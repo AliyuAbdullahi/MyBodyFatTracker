@@ -1,6 +1,5 @@
 package com.lekan.bodyfattracker.ui.education
 
-import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -53,16 +52,17 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.lekan.bodyfattracker.R
 import kotlinx.coroutines.launch
+import android.util.Log
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EducationScreen(
-    viewModel: EducationViewModel = hiltViewModel()
+    viewModel: EducationViewModel = hiltViewModel(),
+    onVideoClick: (videoId: String) -> Unit // Changed from NavViewModel
 ) {
     val uiState by viewModel.state.collectAsState()
     val context = LocalContext.current
@@ -79,13 +79,12 @@ fun EducationScreen(
             viewModel.clearAddVideoMessage()
         }
     }
-     LaunchedEffect(uiState.error) {
+    LaunchedEffect(uiState.error) {
         uiState.error?.let {
             Toast.makeText(context, it, Toast.LENGTH_LONG).show()
-            // Consider adding a viewModel.clearErrorMessage() if you want errors to be non-sticky
+            viewModel.clearErrorMessage()
         }
     }
-
 
     Scaffold(
         topBar = {
@@ -121,11 +120,28 @@ fun EducationScreen(
                 }
             }
 
-            // Content based on selected tab
             Column(modifier = Modifier.padding(horizontal = 8.dp)) {
                 when (uiState.currentTab) {
-                    0 -> CloudVideosTabContent(uiState = uiState, viewModel = viewModel)
-                    1 -> SavedVideosTabContent(uiState = uiState, viewModel = viewModel)
+                    0 -> CloudVideosTabContent(
+                        isLoading = uiState.isLoadingCloud,
+                        videos = uiState.cloudVideos,
+                        error = uiState.error,
+                        isBookmarked = { videoId -> videoId in uiState.savedVideoIds },
+                        onBookmarkToggle = { video ->
+                            if (video.id in uiState.savedVideoIds) {
+                                viewModel.unbookmarkVideo(video)
+                            } else {
+                                viewModel.bookmarkVideo(video)
+                            }
+                        },
+                        onItemClick = { videoInfo -> onVideoClick(videoInfo.youtubeVideoId) } // Use callback
+                    )
+
+                    1 -> SavedVideosTabContent(
+                        videos = uiState.savedVideosList,
+                        onDelete = { video -> viewModel.deleteSavedVideo(video) },
+                        onItemClick = { videoInfo -> onVideoClick(videoInfo.youtubeVideoId) } // Use callback
+                    )
                 }
             }
         }
@@ -138,7 +154,7 @@ fun EducationScreen(
             onUrlChange = viewModel::onNewVideoUrlChanged,
             onDismiss = viewModel::onDismissAddVideoDialog,
             onSubmit = {
-                scope.launch { // Launching submit in a coroutine as it might involve suspend functions
+                scope.launch {
                     viewModel.submitNewVideo()
                 }
             }
@@ -147,9 +163,16 @@ fun EducationScreen(
 }
 
 @Composable
-fun CloudVideosTabContent(uiState: EducationUiState, viewModel: EducationViewModel) {
-    val context = LocalContext.current
-    if (uiState.isLoadingCloud) {
+fun CloudVideosTabContent(
+    isLoading: Boolean,
+    videos: List<VideoInfo>,
+    error: String?,
+    isBookmarked: (String) -> Boolean,
+    onBookmarkToggle: (VideoInfo) -> Unit,
+    onItemClick: (VideoInfo) -> Unit // Changed to VideoInfo
+) {
+    Log.d("EducationScreen", "CloudVideosTabContent recomposing. isLoading: $isLoading, videos count: ${videos.size}, error: $error")
+    if (isLoading) {
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -157,7 +180,15 @@ fun CloudVideosTabContent(uiState: EducationUiState, viewModel: EducationViewMod
         ) {
             CircularProgressIndicator()
         }
-    } else if (uiState.cloudVideos.isEmpty()) {
+    } else if (error != null && videos.isEmpty()) { // Show error only if list is empty, otherwise list might show with a toast for error
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(stringResource(R.string.error_loading_videos) + "" + error)
+        }
+    } else if (videos.isEmpty()) {
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -171,25 +202,13 @@ fun CloudVideosTabContent(uiState: EducationUiState, viewModel: EducationViewMod
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item { Spacer(modifier = Modifier.height(8.dp)) }
-            items(uiState.cloudVideos, key = { "cloud-${it.id}" }) { video ->
-                val isBookmarked = video.id in uiState.savedVideoIds
+            items(videos, key = { "cloud-${it.id}" }) { video ->
                 VideoListItem(
                     videoInfo = video,
-                    isBookmarked = isBookmarked,
-                    onItemClick = {
-                        val openYouTubeIntent = Intent(
-                            Intent.ACTION_VIEW,
-                            "https://www.youtube.com/watch?v=${video.youtubeVideoId}".toUri()
-                        )
-                        context.startActivity(openYouTubeIntent)
-                    },
-                    onBookmarkToggle = {
-                        if (isBookmarked) {
-                            viewModel.unbookmarkVideo(video)
-                        } else {
-                            viewModel.bookmarkVideo(video)
-                        }
-                    }
+                    isBookmarked = isBookmarked(video.id),
+                    onItemClick = { onItemClick(video) }, // Pass VideoInfo object
+                    onBookmarkToggle = { onBookmarkToggle(video) },
+                    showDeleteAction = false
                 )
             }
             item { Spacer(modifier = Modifier.height(8.dp)) }
@@ -198,9 +217,12 @@ fun CloudVideosTabContent(uiState: EducationUiState, viewModel: EducationViewMod
 }
 
 @Composable
-fun SavedVideosTabContent(uiState: EducationUiState, viewModel: EducationViewModel) {
-    val context = LocalContext.current
-    if (uiState.savedVideosList.isEmpty()) {
+fun SavedVideosTabContent(
+    videos: List<VideoInfo>,
+    onDelete: (VideoInfo) -> Unit,
+    onItemClick: (VideoInfo) -> Unit // Changed to VideoInfo
+) {
+    if (videos.isEmpty()) {
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -214,19 +236,12 @@ fun SavedVideosTabContent(uiState: EducationUiState, viewModel: EducationViewMod
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item { Spacer(modifier = Modifier.height(8.dp)) }
-            items(uiState.savedVideosList, key = { "saved-${it.id}" }) { video ->
+            items(videos, key = { "saved-${it.id}" }) { video ->
                 VideoListItem(
                     videoInfo = video,
-                    onItemClick = {
-                        val openYouTubeIntent = Intent(
-                            Intent.ACTION_VIEW,
-                            "https://www.youtube.com/watch?v=${video.youtubeVideoId}".toUri()
-                        )
-                        context.startActivity(openYouTubeIntent)
-                    },
-                    onDelete = {
-                        viewModel.deleteSavedVideo(video)
-                    }
+                    onItemClick = { onItemClick(video) }, // Pass VideoInfo object
+                    onDelete = { onDelete(video) },
+                    showDeleteAction = true
                 )
             }
             item { Spacer(modifier = Modifier.height(8.dp)) }
@@ -239,9 +254,10 @@ fun SavedVideosTabContent(uiState: EducationUiState, viewModel: EducationViewMod
 fun VideoListItem(
     videoInfo: VideoInfo,
     onItemClick: () -> Unit,
-    isBookmarked: Boolean? = null, // Nullable for saved videos tab where it's not shown
+    isBookmarked: Boolean? = null,
     onBookmarkToggle: (() -> Unit)? = null,
-    onDelete: (() -> Unit)? = null
+    onDelete: (() -> Unit)? = null,
+    showDeleteAction: Boolean
 ) {
     Card(
         modifier = Modifier
@@ -265,34 +281,36 @@ fun VideoListItem(
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                 Text(
+                Text(
                     text = videoInfo.title,
                     style = MaterialTheme.typography.titleMedium,
-                    maxLines = 2, // Max 2 lines for title
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                // Spacer for actions, or if you want to add more info like video duration later
                 Spacer(modifier = Modifier.height(4.dp))
             }
 
-
-            // Action buttons
-            if (onBookmarkToggle != null && isBookmarked != null) {
-                IconButton(onClick = onBookmarkToggle) {
-                    Icon(
-                        imageVector = if (isBookmarked) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,
-                        contentDescription = stringResource(if (isBookmarked) R.string.unbookmark_video_cd else R.string.bookmark_video_cd),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
+            if (showDeleteAction) {
+                onDelete?.let {
+                    IconButton(onClick = it) {
+                        Icon(
+                            imageVector = Icons.Filled.Delete,
+                            contentDescription = stringResource(R.string.delete_saved_video_cd),
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
-            }
-            if (onDelete != null) {
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        imageVector = Icons.Filled.Delete,
-                        contentDescription = stringResource(R.string.delete_saved_video_cd),
-                        tint = MaterialTheme.colorScheme.error
-                    )
+            } else {
+                isBookmarked?.let { bookmarked ->
+                    onBookmarkToggle?.let { toggle ->
+                        IconButton(onClick = toggle) {
+                            Icon(
+                                imageVector = if (bookmarked) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,
+                                contentDescription = stringResource(if (bookmarked) R.string.unbookmark_video_cd else R.string.bookmark_video_cd),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -331,9 +349,8 @@ fun AddVideoDialog(
                     isError = uiState.newVideoUrlError != null,
                     supportingText = { uiState.newVideoUrlError?.let { Text(it) } }
                 )
-                // Display general add video message/error if any (e.g. from submitNewVideo)
-                 uiState.addVideoMessage?.let {
-                    val isError = uiState.error != null // A bit of a guess, tailor this to how addVideoMessage is set
+                uiState.addVideoMessage?.let {
+                    val isError = uiState.error != null
                     Text(
                         text = it,
                         color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -346,7 +363,7 @@ fun AddVideoDialog(
         confirmButton = {
             Button(
                 onClick = onSubmit,
-                enabled = !uiState.addVideoInProgress && uiState.newVideoTitle.isNotBlank() && uiState.newVideoUrl.isNotBlank()
+                enabled = !uiState.addVideoInProgress && uiState.newVideoTitle.isNotBlank() && uiState.newVideoUrl.isNotBlank() && uiState.newVideoTitleError == null && uiState.newVideoUrlError == null
             ) {
                 if (uiState.addVideoInProgress) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp))

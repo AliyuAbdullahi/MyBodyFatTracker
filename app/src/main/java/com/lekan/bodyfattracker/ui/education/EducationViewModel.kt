@@ -263,4 +263,10 @@ class EducationViewModel @Inject constructor(
             updateState { copy(addVideoMessage = null) }
         }
     }
+
+    fun clearErrorMessage() {
+        launch {
+            updateState { copy(error = null) }
+        }
+    }
 }
