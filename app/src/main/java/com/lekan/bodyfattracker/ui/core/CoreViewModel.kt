@@ -14,7 +14,8 @@ abstract class CoreViewModel<STATE> : ViewModel() {
     private val _state = MutableStateFlow(initialize())
     val state: StateFlow<STATE> = _state.asStateFlow()
 
-    val currentState = state.value
+    val currentState
+        get() = state.value
 
     suspend fun updateState(newState: STATE.() -> STATE) {
         val update = _state.value.newState()

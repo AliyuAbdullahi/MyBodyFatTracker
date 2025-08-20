@@ -172,4 +172,21 @@
     <string name="no_saved_videos">You haven\'t saved any videos yet.</string>
     <string name="video_player">Video Player</string>
     <string name="search_videos_placeholder">Search videos…</string>
+    <string name="no_videos_found_search">No videos found matching your search.</string>
+    <string name="confirm_delete_selected_message">Are you sure you want to delete %1$d selected video(s)?</string>
+    <string name="confirm_delete_single_message">Are you sure you want to delete the video \"%1$s\"?</string>
+    <string name="confirm_delete_all_cloud_message">Are you sure you want to delete ALL cloud videos? This action cannot be undone.</string>
+    <string name="videos_deleted_success">Video(s) deleted successfully.</string>
+    <string name="all_videos_deleted_success">All cloud videos deleted successfully.</string>
+    <string name="delete_video_error">Error deleting video(s): %1$s</string>
+    <string name="delete_all_videos_error">Error deleting all videos: %1$s</string>
+    <string name="selected_cd">selected</string>
+    <string name="not_selected_cd">not selected\n</string>
+    <string name="deleting_videos">Deleting videos…</string>
+    <string name="delete_selected_videos_cd">Delete selected videos</string>
+    <string name="clear_selection_cd">Clear selection</string>
+    <string name="delete_all_cloud_videos_cd">Delete all cloud videos</string>
+    <string name="selected_items_title">%1$d selected</string>
+    <string name="delete_video_cd">Delete video</string>
+
 </resources>

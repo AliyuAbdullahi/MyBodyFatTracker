@@ -9,6 +9,8 @@ package com.lekan.bodyfattracker.ui.education
 // val youtubeVideoId: String
 // )
 import android.util.Log
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.geometry.isEmpty
 import androidx.lifecycle.viewModelScope
 import com.lekan.bodyfattracker.data.EducationRepository
 import com.lekan.bodyfattracker.ui.core.CoreViewModel
@@ -42,7 +44,22 @@ data class EducationUiState(
     val newVideoTitleError: String? = null,
     val newVideoUrlError: String? = null,
     val addVideoInProgress: Boolean = false,
-    val addVideoMessage: String? = null
+    val addVideoMessage: String? = null,
+
+    // Search Feature States
+    val searchQuery: String = "",
+    val filteredCloudVideos: List<VideoInfo> = emptyList(),
+
+    // SuperUser Delete Feature States
+    val isSelectionModeActive: Boolean = false,
+    val selectedVideoIds: Set<String> = emptySet(), // IDs of cloud videos selected for deletion
+    val showConfirmDeleteDialog: Boolean = false,
+    val confirmDeleteDialogTitle: String = "",
+    val confirmDeleteDialogMessage: String = "",
+    val videoIdsPendingDeletion: List<String> = emptyList(),
+    val isDeleteAllOperation: Boolean = false,
+    val isDeletingVideos: Boolean = false,
+    val deleteOperationMessage: String? = null
 )
 
 @HiltViewModel
@@ -69,7 +86,7 @@ class EducationViewModel @Inject constructor(
                 }
         }
 
-        // Collect saved video IDs
+        // Collect saved video IDs (from Room)
         launch {
             repository.getSavedVideoIds()
                 .catch { exception ->
@@ -78,33 +95,66 @@ class EducationViewModel @Inject constructor(
                     }
                 }
                 .collect { ids ->
-                    updateState { copy(savedVideoIds = ids) }
+                    updateState { copy(savedVideoIds = ids) } // This is for bookmarked videos in Room
                 }
         }
     }
 
-    // In EducationViewModel.kt
     fun fetchCloudVideos() {
         launch {
-            updateState { copy(isLoadingCloud = true, error = null) } // Sets isLoadingCloud = true
+            updateState { copy(isLoadingCloud = true, error = null) }
             repository.getCloudVideos()
                 .catch { e ->
                     updateState {
                         copy(
-                            isLoadingCloud = false, // Sets isLoadingCloud = false on error
-                            error = "Error fetching cloud videos: ${e.localizedMessage}"
+                            isLoadingCloud = false,
+                            error = "Error fetching cloud videos: ${e.localizedMessage}",
+                            isSelectionModeActive = false, // Reset selection mode on error
+                            selectedVideoIds = emptySet()   // Clear selected IDs on error
                         )
                     }
                 }
                 .collect { videos ->
-                    Log.d("EducationViewModel", "Cloud videos fetched: ${videos.size} items") // Add this log
+                    Log.d("EducationViewModel", "Cloud videos fetched: ${videos.size} items")
                     updateState {
+                        val currentQuery = state.value.searchQuery
+                        val filteredList = if (currentQuery.isBlank()) {
+                            videos
+                        } else {
+                            videos.filter { video ->
+                                video.title.contains(currentQuery, ignoreCase = true)
+                            }
+                        }
+                        val currentSelectedIds = state.value.selectedVideoIds
                         copy(
                             isLoadingCloud = false,
-                            cloudVideos = videos
+                            cloudVideos = videos,
+                            filteredCloudVideos = filteredList,
+                            // Reset selection mode if list is empty or selected items are no longer present
+                            isSelectionModeActive = if (videos.isEmpty()) false else state.value.isSelectionModeActive,
+                            selectedVideoIds = if (videos.isEmpty()) emptySet() else currentSelectedIds.filter { id -> videos.any { v -> v.id == id } }.toSet()
                         )
                     }
                 }
+        }
+    }
+
+    fun onSearchQueryChanged(query: String) {
+        launch {
+            updateState {
+                val filteredList = if (query.isBlank()) {
+                    state.value.cloudVideos
+                } else {
+                    state.value.cloudVideos.filter { video ->
+                        video.title.contains(query, ignoreCase = true)
+                    }
+                }
+                // Use `this.copy` or just `copy` if inside the `updateState` lambda for `CoreViewModel`
+                copy(
+                    searchQuery = query,
+                    filteredCloudVideos = filteredList
+                )
+            }
         }
     }
 
@@ -119,7 +169,6 @@ class EducationViewModel @Inject constructor(
         launch {
             try {
                 repository.saveVideoToLocal(video)
-                // UI will update reactively via the flow collecting savedVideoIds
             } catch (e: Exception) {
                 updateState { copy(error = "Error bookmarking video: ${e.message}") }
             }
@@ -130,17 +179,16 @@ class EducationViewModel @Inject constructor(
         launch {
             try {
                 repository.deleteVideoFromLocal(video)
-                // UI will update reactively
             } catch (e: Exception) {
                 updateState { copy(error = "Error unbookmarking video: ${e.message}") }
             }
         }
     }
 
-    fun deleteSavedVideo(video: VideoInfo) {
+    fun deleteSavedVideo(video: VideoInfo) { // This is for Room videos
         launch {
             try {
-                repository.deleteVideoFromLocal(video) // Same as unbookmarking
+                repository.deleteVideoFromLocal(video)
             } catch (e: Exception) {
                 updateState { copy(error = "Error deleting saved video: ${e.message}") }
             }
@@ -198,7 +246,7 @@ class EducationViewModel @Inject constructor(
 
         var hasError = false
         if (currentTitle.isEmpty()) {
-            viewModelScope.launch {
+            viewModelScope.launch { // Use viewModelScope for operations not directly tied to a single state update sequence
                 updateState { copy(newVideoTitleError = "Title cannot be empty") }
             }
             hasError = true
@@ -219,7 +267,7 @@ class EducationViewModel @Inject constructor(
         }
 
         launch {
-            repository.addVideoToFirestore(currentTitle, currentUrl) // Changed to addVideoToFirestore
+            repository.addVideoToFirestore(currentTitle, currentUrl)
                 .catch { exception ->
                     updateState {
                         copy(
@@ -228,7 +276,7 @@ class EducationViewModel @Inject constructor(
                         )
                     }
                 }
-                .collect { result -> // Assuming addVideoToFirestore returns Flow<Result<String>>
+                .collect { result ->
                     result.fold(
                         onSuccess = { message ->
                             updateState {
@@ -238,7 +286,10 @@ class EducationViewModel @Inject constructor(
                                     addVideoMessage = message,
                                     newVideoTitle = if (closeDialog) "" else currentTitle,
                                     newVideoUrl = if (closeDialog) "" else currentUrl,
-                                    showAddVideoDialog = !closeDialog
+                                    showAddVideoDialog = !closeDialog,
+                                    // Reset selection mode on successful add
+                                    isSelectionModeActive = false,
+                                    selectedVideoIds = emptySet()
                                 )
                             }
                             if (message.contains("added successfully", ignoreCase = true)) {
@@ -267,6 +318,165 @@ class EducationViewModel @Inject constructor(
     fun clearErrorMessage() {
         launch {
             updateState { copy(error = null) }
+        }
+    }
+
+    // --- SuperUser: Delete Cloud Video Features ---
+
+    fun onVideoLongPress(videoInfo: VideoInfo) {
+        launch {
+            updateState {
+                copy(
+                    isSelectionModeActive = true,
+                    selectedVideoIds = selectedVideoIds + videoInfo.id // Add to the set
+                )
+            }
+        }
+    }
+
+    fun onVideoShortPressSelection(videoInfo: VideoInfo) {
+        launch {
+            updateState {
+                val currentSelectedIds = selectedVideoIds
+                copy(
+                    selectedVideoIds = if (videoInfo.id in currentSelectedIds) {
+                        currentSelectedIds - videoInfo.id // Remove if already selected
+                    } else {
+                        currentSelectedIds + videoInfo.id // Add if not selected
+                    }
+                )
+            }
+        }
+    }
+
+    fun clearSelectionMode() {
+        launch {
+            updateState {
+                copy(
+                    isSelectionModeActive = false,
+                    selectedVideoIds = emptySet()
+                )
+            }
+        }
+    }
+
+    fun prepareDeleteSelectedVideos(title: String, messageFormat: String) {
+        launch {
+            val currentSelectedVideoIds = state.value.selectedVideoIds
+            if (currentSelectedVideoIds.isEmpty()) return@launch
+            val message = messageFormat.format(currentSelectedVideoIds.size)
+            updateState {
+                copy(
+                    showConfirmDeleteDialog = true,
+                    confirmDeleteDialogTitle = title,
+                    confirmDeleteDialogMessage = message,
+                    videoIdsPendingDeletion = currentSelectedVideoIds.toList(),
+                    isDeleteAllOperation = false
+                )
+            }
+        }
+    }
+
+    fun prepareDeleteSingleVideoFromTap(videoInfo: VideoInfo, title: String, messageFormat: String) {
+        launch {
+            val message = messageFormat.format(videoInfo.title) // Format with video title
+            updateState {
+                copy(
+                    showConfirmDeleteDialog = true,
+                    confirmDeleteDialogTitle = title,
+                    confirmDeleteDialogMessage = message,
+                    videoIdsPendingDeletion = listOf(videoInfo.id),
+                    isDeleteAllOperation = false
+                )
+            }
+        }
+    }
+
+    fun prepareDeleteAllCloudVideos(title: String, message: String) {
+        launch {
+            updateState {
+                copy(
+                    showConfirmDeleteDialog = true,
+                    confirmDeleteDialogTitle = title,
+                    confirmDeleteDialogMessage = message,
+                    videoIdsPendingDeletion = emptyList(), // Not strictly needed for 'all'
+                    isDeleteAllOperation = true
+                )
+            }
+        }
+    }
+
+    fun executeConfirmedDeletion(successMessageSelected: String, successMessageAll: String, errorMessageFormat: String) {
+        launch {
+            updateState { copy(isDeletingVideos = true, showConfirmDeleteDialog = false, deleteOperationMessage = null) }
+
+            val operationFlow = if (state.value.isDeleteAllOperation) {
+                repository.deleteAllCloudVideosFromFirestore()
+            } else {
+                if (state.value.videoIdsPendingDeletion.isEmpty()) {
+                    updateState { copy(isDeletingVideos = false, deleteOperationMessage = "No videos selected for deletion.") }
+                    return@launch
+                }
+                repository.deleteVideosFromFirestore(state.value.videoIdsPendingDeletion)
+            }
+
+            operationFlow
+                .catch { e ->
+                    updateState {
+                        copy(
+                            isDeletingVideos = false,
+                            deleteOperationMessage = errorMessageFormat.format(e.localizedMessage ?: "Unknown error")
+                        )
+                    }
+                }
+                .collect { result ->
+                    result.fold(
+                        onSuccess = { repoMessage ->
+                            val finalMessage = if (state.value.isDeleteAllOperation) successMessageAll else successMessageSelected.format(state.value.videoIdsPendingDeletion.size)
+                            updateState {
+                                copy(
+                                    isDeletingVideos = false,
+                                    deleteOperationMessage = finalMessage,
+                                    selectedVideoIds = emptySet(),
+                                    isSelectionModeActive = false,
+                                    videoIdsPendingDeletion = emptyList(), // Clear pending
+                                    isDeleteAllOperation = false          // Reset flag
+                                )
+                            }
+                            fetchCloudVideos() // Refresh the video list
+                        },
+                        onFailure = { e ->
+                            updateState {
+                                copy(
+                                    isDeletingVideos = false,
+                                    deleteOperationMessage = errorMessageFormat.format(e.localizedMessage ?: "Operation failed"),
+                                    videoIdsPendingDeletion = emptyList(), // Clear pending
+                                    isDeleteAllOperation = false          // Reset flag
+                                )
+                            }
+                        }
+                    )
+                }
+        }
+    }
+
+    fun cancelVideoDeletion() {
+        launch {
+            updateState {
+                copy(
+                    showConfirmDeleteDialog = false,
+                    videoIdsPendingDeletion = emptyList(),
+                    isDeleteAllOperation = false,
+                    confirmDeleteDialogTitle = "",
+                    confirmDeleteDialogMessage = ""
+                )
+            }
+        }
+    }
+
+    fun clearDeleteOperationMessage() {
+        launch {
+            updateState { copy(deleteOperationMessage = null) }
         }
     }
 }

@@ -155,6 +155,85 @@ class EducationRepository @Inject constructor(
         }
     }
 
+    // In EducationRepository.kt
+
+// ... (other existing methods) ...
+
+    /**
+     * Deletes a list of specified videos from Firestore (Superuser function).
+     */
+    fun deleteVideosFromFirestore(videoIds: List<String>): Flow<Result<String>> = callbackFlow {
+        if (videoIds.isEmpty()) {
+            trySend(Result.success("No videos selected for deletion.")).isSuccess
+            close()
+            return@callbackFlow
+        }
+
+        val batch = firestore.batch()
+        videoIds.forEach { videoId ->
+            val docRef = firestore.collection("education_videos").document(videoId)
+            batch.delete(docRef)
+        }
+
+        batch.commit()
+            .addOnSuccessListener {
+                trySend(Result.success("${videoIds.size} video(s) deleted successfully from Firestore.")).isSuccess
+                close()
+            }
+            .addOnFailureListener { e ->
+                trySend(Result.failure(e)).isSuccess
+                close()
+            }
+        awaitClose { }
+    }.flowOn(Dispatchers.IO)
+
+    /**
+     * Deletes all videos from the 'education_videos' collection in Firestore (Superuser function).
+     * Note: This handles up to 500 videos in a single batch. For more, chunking would be needed.
+     */
+    fun deleteAllCloudVideosFromFirestore(): Flow<Result<String>> = callbackFlow {
+        val collectionRef = firestore.collection("education_videos")
+
+        collectionRef.get()
+            .addOnSuccessListener { querySnapshot ->
+                if (querySnapshot.isEmpty) {
+                    trySend(Result.success("No cloud videos found to delete.")).isSuccess
+                    close()
+                    return@addOnSuccessListener
+                }
+
+                // Firestore batch writes are limited (e.g., 500 operations).
+                // If more than 500 docs, this needs to be chunked.
+                // For now, proceeding with a single batch.
+                if (querySnapshot.size() > 500) {
+                    // Log or indicate that not all videos might be deleted due to batch limit.
+                    // Or implement chunking here.
+                    Log.w("EducationRepository", "Attempting to delete more than 500 videos in a single batch. This might fail or be incomplete.")
+                }
+
+                val batch = firestore.batch()
+                querySnapshot.documents.forEach { documentSnapshot ->
+                    batch.delete(documentSnapshot.reference)
+                }
+
+                batch.commit()
+                    .addOnSuccessListener {
+                        trySend(Result.success("All cloud videos (${querySnapshot.size()}) deleted successfully from Firestore.")).isSuccess
+                        close()
+                    }
+                    .addOnFailureListener { e ->
+                        trySend(Result.failure(e)).isSuccess
+                        close()
+                    }
+            }
+            .addOnFailureListener { e ->
+                trySend(Result.failure(e)).isSuccess
+                close()
+            }
+        awaitClose { }
+    }.flowOn(Dispatchers.IO)
+
+
     private fun generateYouTubeThumbnailUrl(videoId: String): String {
         return "https://img.youtube.com/vi/$videoId/mqdefault.jpg"
     }

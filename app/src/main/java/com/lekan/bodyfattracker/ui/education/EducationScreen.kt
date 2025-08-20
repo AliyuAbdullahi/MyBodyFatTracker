@@ -1,7 +1,10 @@
 package com.lekan.bodyfattracker.ui.education
 
+import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,7 +23,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -56,13 +65,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.lekan.bodyfattracker.R
 import kotlinx.coroutines.launch
-import android.util.Log
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EducationScreen(
     viewModel: EducationViewModel = hiltViewModel(),
-    onVideoClick: (videoId: String) -> Unit // Changed from NavViewModel
+    onVideoClick: (videoId: String) -> Unit
 ) {
     val uiState by viewModel.state.collectAsState()
     val context = LocalContext.current
@@ -86,15 +94,68 @@ fun EducationScreen(
         }
     }
 
+    // Superuser delete feedback
+    LaunchedEffect(uiState.deleteOperationMessage) {
+        uiState.deleteOperationMessage?.let {
+            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+            viewModel.clearDeleteOperationMessage()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.education_tab_title)) },
+                title = {
+                    if (uiState.isSuperUser && uiState.isSelectionModeActive && uiState.currentTab == 0) {
+                        Text(stringResource(R.string.selected_items_title, uiState.selectedVideoIds.size))
+                    } else {
+                        Text(stringResource(R.string.education_tab_title))
+                    }
+                },
                 windowInsets = WindowInsets(0),
+                actions = {
+                    if (uiState.isSuperUser && uiState.currentTab == 0) { // Actions for Superuser on Cloud Videos tab
+                        if (uiState.isSelectionModeActive) {
+                            IconButton(
+                                onClick = {
+                                    viewModel.prepareDeleteSelectedVideos(
+                                        title = context.getString(R.string.confirm_delete_title),
+                                        messageFormat = context.getString(R.string.confirm_delete_selected_message)
+                                    )
+                                },
+                                enabled = uiState.selectedVideoIds.isNotEmpty()
+                            ) {
+                                Icon(
+                                    Icons.Filled.Delete,
+                                    contentDescription = stringResource(R.string.delete_selected_videos_cd)
+                                )
+                            }
+                            IconButton(onClick = { viewModel.clearSelectionMode() }) {
+                                Icon(
+                                    Icons.Filled.Close,
+                                    contentDescription = stringResource(R.string.clear_selection_cd)
+                                )
+                            }
+                        } else {
+                            IconButton(onClick = {
+                                viewModel.prepareDeleteAllCloudVideos(
+                                    title = context.getString(R.string.confirm_delete_title),
+                                    message = context.getString(R.string.confirm_delete_all_cloud_message)
+                                )
+                            }) {
+                                Icon(
+                                    Icons.Filled.DeleteSweep,
+                                    contentDescription = stringResource(R.string.delete_all_cloud_videos_cd)
+                                )
+                            }
+                        }
+                    }
+                }
             )
         },
         floatingActionButton = {
-            if (uiState.isSuperUser) {
+            // FAB is visible for superuser and when not in selection mode for cloud videos
+            if (uiState.isSuperUser && !(uiState.isSelectionModeActive && uiState.currentTab == 0)) {
                 FloatingActionButton(onClick = { viewModel.onShowAddVideoDialog() }) {
                     Icon(
                         Icons.Filled.Add,
@@ -123,24 +184,15 @@ fun EducationScreen(
             Column(modifier = Modifier.padding(horizontal = 8.dp)) {
                 when (uiState.currentTab) {
                     0 -> CloudVideosTabContent(
-                        isLoading = uiState.isLoadingCloud,
-                        videos = uiState.cloudVideos,
-                        error = uiState.error,
-                        isBookmarked = { videoId -> videoId in uiState.savedVideoIds },
-                        onBookmarkToggle = { video ->
-                            if (video.id in uiState.savedVideoIds) {
-                                viewModel.unbookmarkVideo(video)
-                            } else {
-                                viewModel.bookmarkVideo(video)
-                            }
-                        },
-                        onItemClick = { videoInfo -> onVideoClick(videoInfo.youtubeVideoId) } // Use callback
+                        uiState = uiState,
+                        viewModel = viewModel,
+                        onItemClick = { videoInfo -> onVideoClick(videoInfo.youtubeVideoId) }
                     )
 
                     1 -> SavedVideosTabContent(
-                        videos = uiState.savedVideosList,
-                        onDelete = { video -> viewModel.deleteSavedVideo(video) },
-                        onItemClick = { videoInfo -> onVideoClick(videoInfo.youtubeVideoId) } // Use callback
+                        uiState = uiState,
+                        viewModel = viewModel, // Pass viewModel for consistency, though not all features used
+                        onItemClick = { videoInfo -> onVideoClick(videoInfo.youtubeVideoId) }
                     )
                 }
             }
@@ -160,69 +212,155 @@ fun EducationScreen(
             }
         )
     }
-}
 
-@Composable
-fun CloudVideosTabContent(
-    isLoading: Boolean,
-    videos: List<VideoInfo>,
-    error: String?,
-    isBookmarked: (String) -> Boolean,
-    onBookmarkToggle: (VideoInfo) -> Unit,
-    onItemClick: (VideoInfo) -> Unit // Changed to VideoInfo
-) {
-    Log.d("EducationScreen", "CloudVideosTabContent recomposing. isLoading: $isLoading, videos count: ${videos.size}, error: $error")
-    if (isLoading) {
+    // Confirmation Dialog for Deletions
+    if (uiState.showConfirmDeleteDialog) {
+        val context = LocalContext.current
+        AlertDialog(
+            onDismissRequest = { viewModel.cancelVideoDeletion() },
+            title = { Text(uiState.confirmDeleteDialogTitle) },
+            text = { Text(uiState.confirmDeleteDialogMessage) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.executeConfirmedDeletion(
+                            successMessageSelected = context.getString(R.string.videos_deleted_success),
+                            successMessageAll = context.getString(R.string.all_videos_deleted_success),
+                            errorMessageFormat = context.getString(R.string.delete_video_error) // Assuming general error message format
+                        )
+                    }
+                ) {
+                    Text(stringResource(android.R.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.cancelVideoDeletion() }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            }
+        )
+    }
+
+    // Global loading indicator for deletions
+    if (uiState.isDeletingVideos) {
         Column(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp) // Use the same padding as main content
+                .clickable(enabled = false, onClick = {}), // Block interaction
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             CircularProgressIndicator()
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(stringResource(R.string.deleting_videos))
         }
-    } else if (error != null && videos.isEmpty()) { // Show error only if list is empty, otherwise list might show with a toast for error
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(stringResource(R.string.error_loading_videos) + "" + error)
-        }
-    } else if (videos.isEmpty()) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(stringResource(R.string.no_videos_available))
-        }
-    } else {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            item { Spacer(modifier = Modifier.height(8.dp)) }
-            items(videos, key = { "cloud-${it.id}" }) { video ->
-                VideoListItem(
-                    videoInfo = video,
-                    isBookmarked = isBookmarked(video.id),
-                    onItemClick = { onItemClick(video) }, // Pass VideoInfo object
-                    onBookmarkToggle = { onBookmarkToggle(video) },
-                    showDeleteAction = false
-                )
+    }
+}
+
+@Composable
+fun CloudVideosTabContent(
+    uiState: EducationUiState,
+    viewModel: EducationViewModel,
+    onItemClick: (VideoInfo) -> Unit
+) {
+    Log.d("EducationScreen", "CloudVideosTabContent recomposing. isLoading: ${uiState.isLoadingCloud}, videos count: ${uiState.filteredCloudVideos.size}, error: ${uiState.error}, query: ${uiState.searchQuery}")
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        OutlinedTextField(
+            value = uiState.searchQuery,
+            onValueChange = viewModel::onSearchQueryChanged,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            label = { Text(stringResource(R.string.search_videos_placeholder)) },
+            placeholder = { Text(stringResource(R.string.search_videos_placeholder)) },
+            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
+            trailingIcon = {
+                if (uiState.searchQuery.isNotEmpty()) {
+                    IconButton(onClick = { viewModel.onSearchQueryChanged("") }) {
+                        Icon(Icons.Filled.Clear, contentDescription = "Clear search")
+                    }
+                }
+            },
+            singleLine = true
+        )
+
+        if (uiState.isLoadingCloud) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                CircularProgressIndicator()
             }
-            item { Spacer(modifier = Modifier.height(8.dp)) }
+        } else if (uiState.error != null && uiState.filteredCloudVideos.isEmpty()) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(stringResource(R.string.error_loading_videos) + " " + uiState.error)
+            }
+        } else if (uiState.filteredCloudVideos.isEmpty()) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(if (uiState.searchQuery.isNotEmpty()) stringResource(R.string.no_videos_found_search) else stringResource(R.string.no_videos_available))
+            }
+        } else {
+            val confirmDeleteTitle = stringResource(R.string.confirm_delete_title)
+            val confirmDeleteMessage =  stringResource(R.string.confirm_delete_single_message)
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(uiState.filteredCloudVideos, key = { "cloud-${it.id}" }) { video ->
+                    VideoListItem(
+                        videoInfo = video,
+                        onItemClick = { onItemClick(video) }, // For playback
+                        isBookmarked = video.id in uiState.savedVideoIds,
+                        onBookmarkToggle = {
+                            if (video.id in uiState.savedVideoIds) {
+                                viewModel.unbookmarkVideo(video)
+                            } else {
+                                viewModel.bookmarkVideo(video)
+                            }
+                        },
+                        // Superuser and selection related parameters
+                        isSuperUser = uiState.isSuperUser,
+                        isCloudVideoItem = true,
+                        isSelectionModeActive = uiState.isSelectionModeActive,
+                        isSelected = video.id in uiState.selectedVideoIds,
+                        onVideoLongClick = { viewModel.onVideoLongPress(video) },
+                        onVideoShortClickInSelection = { viewModel.onVideoShortPressSelection(video) },
+                        onVideoShortClickForSingleDelete = {
+                            viewModel.prepareDeleteSingleVideoFromTap(
+                                videoInfo = video,
+                                title = confirmDeleteTitle,
+                                messageFormat = confirmDeleteMessage
+                            )
+                        },
+                        // Saved video specific parameters (not used here)
+                        showDeleteActionForSavedVideo = false,
+                        onDeleteSavedVideoClick = null
+                    )
+                }
+                item { Spacer(modifier = Modifier.height(8.dp)) } // For padding at the bottom
+            }
         }
     }
 }
 
 @Composable
 fun SavedVideosTabContent(
-    videos: List<VideoInfo>,
-    onDelete: (VideoInfo) -> Unit,
-    onItemClick: (VideoInfo) -> Unit // Changed to VideoInfo
+    uiState: EducationUiState,
+    viewModel: EducationViewModel, // Passed for consistency if needed, but primary actions are via existing uiState fields
+    onItemClick: (VideoInfo) -> Unit
 ) {
-    if (videos.isEmpty()) {
+    if (uiState.savedVideosList.isEmpty()) {
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -236,12 +374,23 @@ fun SavedVideosTabContent(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item { Spacer(modifier = Modifier.height(8.dp)) }
-            items(videos, key = { "saved-${it.id}" }) { video ->
+            items(uiState.savedVideosList, key = { "saved-${it.id}" }) { video ->
                 VideoListItem(
                     videoInfo = video,
-                    onItemClick = { onItemClick(video) }, // Pass VideoInfo object
-                    onDelete = { onDelete(video) },
-                    showDeleteAction = true
+                    onItemClick = { onItemClick(video) }, // For playback
+                    // Cloud video specific parameters (not used here)
+                    isBookmarked = null, // Saved videos aren't bookmarked in this context
+                    onBookmarkToggle = null,
+                    isSuperUser = uiState.isSuperUser, // Pass for consistency, though actions are gated by isCloudVideoItem
+                    isCloudVideoItem = false,
+                    isSelectionModeActive = false, // Selection mode is for cloud videos
+                    isSelected = false,
+                    onVideoLongClick = null,
+                    onVideoShortClickInSelection = null,
+                    onVideoShortClickForSingleDelete = null,
+                    // Saved video specific parameters
+                    showDeleteActionForSavedVideo = true,
+                    onDeleteSavedVideoClick = { viewModel.deleteSavedVideo(video) }
                 )
             }
             item { Spacer(modifier = Modifier.height(8.dp)) }
@@ -250,25 +399,61 @@ fun SavedVideosTabContent(
 }
 
 
+@OptIn(ExperimentalFoundationApi::class) // Needed for combinedClickable
 @Composable
 fun VideoListItem(
     videoInfo: VideoInfo,
-    onItemClick: () -> Unit,
+    onItemClick: () -> Unit, // For playback
     isBookmarked: Boolean? = null,
     onBookmarkToggle: (() -> Unit)? = null,
-    onDelete: (() -> Unit)? = null,
-    showDeleteAction: Boolean
+    // Superuser and selection related parameters for cloud videos
+    isSuperUser: Boolean = false,
+    isCloudVideoItem: Boolean = false,
+    isSelectionModeActive: Boolean = false,
+    isSelected: Boolean = false,
+    onVideoLongClick: (() -> Unit)? = null,
+    onVideoShortClickInSelection: (() -> Unit)? = null,
+    onVideoShortClickForSingleDelete: (() -> Unit)? = null,
+    // Parameters for saved video deletion
+    onDeleteSavedVideoClick: (() -> Unit)? = null,
+    showDeleteActionForSavedVideo: Boolean = false // True only for saved videos tab item
 ) {
+    val cardBackgroundColor = if (isSelected && isSelectionModeActive && isCloudVideoItem) {
+        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+    } else {
+        CardDefaults.cardColors().containerColor
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onItemClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            .combinedClickable(
+                onClick = {
+                    onItemClick()
+                },
+                onLongClick = {
+                    if (isSuperUser && isCloudVideoItem) {
+                        onVideoLongClick?.invoke()
+                    }
+                }
+            ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = cardBackgroundColor)
     ) {
         Row(
             modifier = Modifier.padding(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Selection indicator for cloud videos in selection mode for superuser
+            if (isSuperUser && isCloudVideoItem && isSelectionModeActive) {
+                Icon(
+                    imageVector = if (isSelected) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
+                    contentDescription = if (isSelected) stringResource(R.string.selected_cd) else stringResource(R.string.not_selected_cd),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+            }
+
             AsyncImage(
                 model = videoInfo.thumbnailUrl,
                 contentDescription = videoInfo.title,
@@ -290,17 +475,20 @@ fun VideoListItem(
                 Spacer(modifier = Modifier.height(4.dp))
             }
 
-            if (showDeleteAction) {
-                onDelete?.let {
-                    IconButton(onClick = it) {
-                        Icon(
-                            imageVector = Icons.Filled.Delete,
-                            contentDescription = stringResource(R.string.delete_saved_video_cd),
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                    }
+            // delete single video super user
+            if (isCloudVideoItem && isSuperUser) {
+                IconButton(onClick = {
+                    onVideoShortClickForSingleDelete?.invoke()
+                }) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = stringResource(R.string.delete_video_cd),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                 }
-            } else {
+            }
+            // Bookmark toggle for cloud videos (not in selection mode, or for non-superusers)
+            if (isCloudVideoItem && (!isSelectionModeActive || !isSuperUser) ) { // Only show bookmark if not in selection mode OR not a superuser in selection mode
                 isBookmarked?.let { bookmarked ->
                     onBookmarkToggle?.let { toggle ->
                         IconButton(onClick = toggle) {
@@ -310,6 +498,19 @@ fun VideoListItem(
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
+                    }
+                }
+            }
+
+            // Delete icon for saved videos tab
+            if (showDeleteActionForSavedVideo) {
+                onDeleteSavedVideoClick?.let {
+                    IconButton(onClick = it) {
+                        Icon(
+                            imageVector = Icons.Filled.Delete,
+                            contentDescription = stringResource(R.string.delete_saved_video_cd),
+                            tint = MaterialTheme.colorScheme.error
+                        )
                     }
                 }
             }
