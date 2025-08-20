@@ -11,9 +11,10 @@ import com.lekan.bodyfattracker.model.WeightEntry // Import WeightEntry
     entities = [
         UserProfile::class,
         BodyFatMeasurement::class,
-        WeightEntry::class // Added WeightEntry entity
+        WeightEntry::class,
+        SavedVideoEntity::class
     ],
-    version = 2, // Incremented version from 1 to 2
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(
@@ -26,5 +27,6 @@ abstract class AppDatabase : RoomDatabase() {
 
     abstract fun profileDao(): ProfileDao
     abstract fun bodyFatMeasurementDao(): BodyFatMeasurementDao
-    abstract fun weightEntryDao(): WeightEntryDao // Ensure this is not commented out
+    abstract fun weightEntryDao(): WeightEntryDao
+    abstract fun savedVideoDao(): SavedVideoDao
 }

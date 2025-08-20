@@ -4,6 +4,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.firestore
 import com.lekan.bodyfattracker.data.EducationRepository
+import com.lekan.bodyfattracker.data.local.SavedVideoDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -22,7 +23,10 @@ object FirebaseModule {
 
     @Provides
     @Singleton
-    fun provideEducationRepository(firestore: FirebaseFirestore): EducationRepository {
-        return EducationRepository(firestore)
+    fun provideEducationRepository(
+        firestore: FirebaseFirestore,
+        savedVideoDao: SavedVideoDao
+    ): EducationRepository {
+        return EducationRepository(firestore, savedVideoDao)
     }
 }

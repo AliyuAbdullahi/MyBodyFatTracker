@@ -164,4 +164,10 @@
     <string name="video_url_label">YouTube Video URL</string>
     <string name="add_button">Add</string>
     <string name="cancel_button">Cancel</string>
+    <string name="cloud_videos_tab">Cloud Videos</string>
+    <string name="saved_videos_tab">My Videos</string>
+    <string name="bookmark_video_cd">Bookmark video</string>
+    <string name="unbookmark_video_cd">Remove bookmark</string>
+    <string name="delete_saved_video_cd">Delete saved video</string>
+    <string name="no_saved_videos">You haven\'t saved any videos yet.</string>
 </resources>

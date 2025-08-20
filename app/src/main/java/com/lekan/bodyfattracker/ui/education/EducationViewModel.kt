@@ -1,28 +1,41 @@
 package com.lekan.bodyfattracker.ui.education
 
+// Make sure VideoInfo is defined correctly, assuming it's here or imported
+// For simplicity, defining it here if it's not elsewhere globally accessible in this structure
+// data class VideoInfo(
+// val id: String, // Firestore document ID
+// val title: String,
+// val thumbnailUrl: String,
+// val youtubeVideoId: String
+// )
+import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.lekan.bodyfattracker.data.EducationRepository
 import com.lekan.bodyfattracker.ui.core.CoreViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-// id: Firestore document ID
+// This should ideally be in a shared location or EducationRepository if it's the definitive source
+// Ensure this matches the definition used by SavedVideoEntity mappers and Repository
 data class VideoInfo(
-    val id: String,
+    val id: String, // Firestore document ID
     val title: String,
     val thumbnailUrl: String,
     val youtubeVideoId: String
 )
 
 data class EducationUiState(
-    val isLoading: Boolean = false,
-    val videos: List<VideoInfo> = emptyList(),
+    val currentTab: Int = 0, // 0 for Cloud, 1 for Saved
+    val isLoadingCloud: Boolean = false,
+    val cloudVideos: List<VideoInfo> = emptyList(),
+    val savedVideosList: List<VideoInfo> = emptyList(),
+    val savedVideoIds: Set<String> = emptySet(), // IDs of videos saved in Room
     val error: String? = null,
+
     // SuperUser Feature States
-    val isSuperUser: Boolean = true, // Placeholder: Set to true for development
+    val isSuperUser: Boolean = true, // Placeholder
     val showAddVideoDialog: Boolean = false,
     val newVideoTitle: String = "",
     val newVideoUrl: String = "",
@@ -34,53 +47,126 @@ data class EducationUiState(
 
 @HiltViewModel
 class EducationViewModel @Inject constructor(
-    private val educationRepository: EducationRepository
+    private val repository: EducationRepository
 ) : CoreViewModel<EducationUiState>() {
 
-    override fun initialize(): EducationUiState {
-        return EducationUiState(isLoading = true) // Start loading immediately
-    }
+    override fun initialize(): EducationUiState = EducationUiState()
+
 
     init {
-        fetchEducationVideos()
+        fetchCloudVideos() // Initial fetch for cloud videos
+
+        // Collect saved videos
+        launch {
+            repository.getSavedVideos()
+                .catch { exception ->
+                    updateState {
+                        copy(error = "Failed to load saved videos: ${exception.message}")
+                    }
+                }
+                .collect { savedVideos ->
+                    updateState { copy(savedVideosList = savedVideos) }
+                }
+        }
+
+        // Collect saved video IDs
+        launch {
+            repository.getSavedVideoIds()
+                .catch { exception ->
+                    updateState {
+                        copy(error = "Failed to load saved video IDs: ${exception.message}")
+                    }
+                }
+                .collect { ids ->
+                    updateState { copy(savedVideoIds = ids) }
+                }
+        }
     }
 
-    private fun fetchEducationVideos() {
-        viewModelScope.launch {
-            educationRepository.getEducationVideos()
-                .onStart {
-                    // Already set isLoading to true in initialize, or set it here if preferred
-                    updateState { copy(isLoading = true, error = null) }
+    // In EducationViewModel.kt
+    fun fetchCloudVideos() {
+        launch {
+            updateState { copy(isLoadingCloud = true, error = null) } // Sets isLoadingCloud = true
+            repository.getCloudVideos()
+                .catch { e ->
+                    updateState {
+                        copy(
+                            isLoadingCloud = false, // Sets isLoadingCloud = false on error
+                            error = "Error fetching cloud videos: ${e.localizedMessage}"
+                        )
+                    }
                 }
-                .catch { exception ->
-                    updateState { copy(isLoading = false, error = exception.message ?: "Unknown error while fetching videos") }
+                .collect { videos ->
+                    Log.d("EducationViewModel", "Cloud videos fetched: ${videos.size} items") // Add this log
+                    updateState {
+                        copy(
+                            isLoadingCloud = false,
+                            cloudVideos = videos
+                        )
+                    }
                 }
-                .collect { videoList ->
-                    updateState { copy(isLoading = false, videos = videoList, error = null) }
-                }
+        }
+    }
+
+
+    fun onTabSelected(tabIndex: Int) {
+       launch {
+           updateState { copy(currentTab = tabIndex) }
+       }
+    }
+
+    fun bookmarkVideo(video: VideoInfo) {
+        launch {
+            try {
+                repository.saveVideoToLocal(video)
+                // UI will update reactively via the flow collecting savedVideoIds
+            } catch (e: Exception) {
+                updateState { copy(error = "Error bookmarking video: ${e.message}") }
+            }
+        }
+    }
+
+    fun unbookmarkVideo(video: VideoInfo) {
+        launch {
+            try {
+                repository.deleteVideoFromLocal(video)
+                // UI will update reactively
+            } catch (e: Exception) {
+                updateState { copy(error = "Error unbookmarking video: ${e.message}") }
+            }
+        }
+    }
+
+    fun deleteSavedVideo(video: VideoInfo) {
+        launch {
+            try {
+                repository.deleteVideoFromLocal(video) // Same as unbookmarking
+            } catch (e: Exception) {
+                updateState { copy(error = "Error deleting saved video: ${e.message}") }
+            }
         }
     }
 
     // --- SuperUser: Add Video Feature ---
 
     fun onNewVideoTitleChanged(title: String) {
-        viewModelScope.launch {
+        launch {
             updateState { copy(newVideoTitle = title, newVideoTitleError = null) }
         }
     }
 
     fun onNewVideoUrlChanged(url: String) {
-       viewModelScope.launch {
-           updateState { copy(newVideoUrl = url, newVideoUrlError = null) }
-       }
+        launch {
+            updateState { copy(newVideoUrl = url, newVideoUrlError = null) }
+        }
     }
 
     fun onShowAddVideoDialog() {
-        viewModelScope.launch {
+        launch {
             updateState {
                 copy(
                     showAddVideoDialog = true,
-                    newVideoTitle = "", // Reset fields when dialog is shown
+                    newVideoTitle = "",
                     newVideoUrl = "",
                     newVideoTitleError = null,
                     newVideoUrlError = null,
@@ -89,11 +175,10 @@ class EducationViewModel @Inject constructor(
                 )
             }
         }
-
     }
 
     fun onDismissAddVideoDialog() {
-        viewModelScope.launch {
+        launch {
             updateState {
                 copy(
                     showAddVideoDialog = false,
@@ -102,7 +187,6 @@ class EducationViewModel @Inject constructor(
                     newVideoTitleError = null,
                     newVideoUrlError = null,
                     addVideoInProgress = false
-                    // Keep addVideoMessage to allow Toast to show if it was just set
                 )
             }
         }
@@ -114,16 +198,15 @@ class EducationViewModel @Inject constructor(
 
         var hasError = false
         if (currentTitle.isEmpty()) {
-           viewModelScope.launch {
-               updateState { copy(newVideoTitleError = "Title cannot be empty") }
-           }
+            viewModelScope.launch {
+                updateState { copy(newVideoTitleError = "Title cannot be empty") }
+            }
             hasError = true
         }
-        // Basic URL validation (not exhaustive)
         if (currentUrl.isEmpty() || (!currentUrl.startsWith("http://") && !currentUrl.startsWith("https://"))) {
             viewModelScope.launch {
-               updateState { copy(newVideoUrlError = "Please enter a valid URL") }
-           }
+                updateState { copy(newVideoUrlError = "Please enter a valid URL") }
+            }
             hasError = true
         }
 
@@ -131,12 +214,12 @@ class EducationViewModel @Inject constructor(
             return
         }
 
-        viewModelScope.launch {
+        launch {
             updateState { copy(addVideoInProgress = true, addVideoMessage = null) }
         }
 
-        viewModelScope.launch {
-            educationRepository.addVideo(currentTitle, currentUrl)
+        launch {
+            repository.addVideoToFirestore(currentTitle, currentUrl) // Changed to addVideoToFirestore
                 .catch { exception ->
                     updateState {
                         copy(
@@ -145,21 +228,21 @@ class EducationViewModel @Inject constructor(
                         )
                     }
                 }
-                .collect { result ->
+                .collect { result -> // Assuming addVideoToFirestore returns Flow<Result<String>>
                     result.fold(
                         onSuccess = { message ->
                             updateState {
+                                val closeDialog = message.contains("added successfully", ignoreCase = true)
                                 copy(
                                     addVideoInProgress = false,
                                     addVideoMessage = message,
-                                    // Reset fields only if successfully added, not if "already exists" but keep dialog open for correction
-                                    newVideoTitle = if (message.contains("added successfully", ignoreCase = true)) "" else currentTitle,
-                                    newVideoUrl = if (message.contains("added successfully", ignoreCase = true)) "" else currentUrl,
-                                    showAddVideoDialog = !message.contains("added successfully", ignoreCase = true) // Close dialog on success
+                                    newVideoTitle = if (closeDialog) "" else currentTitle,
+                                    newVideoUrl = if (closeDialog) "" else currentUrl,
+                                    showAddVideoDialog = !closeDialog
                                 )
                             }
                             if (message.contains("added successfully", ignoreCase = true)) {
-                                fetchEducationVideos() // Refresh video list
+                                fetchCloudVideos() // Refresh cloud video list
                             }
                         },
                         onFailure = { exception ->
@@ -176,7 +259,7 @@ class EducationViewModel @Inject constructor(
     }
 
     fun clearAddVideoMessage() {
-        viewModelScope.launch {
+        launch {
             updateState { copy(addVideoMessage = null) }
         }
     }

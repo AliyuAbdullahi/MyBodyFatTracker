@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.lekan.bodyfattracker.data.local.AppDatabase
 import com.lekan.bodyfattracker.data.local.BodyFatMeasurementDao
 import com.lekan.bodyfattracker.data.local.ProfileDao
+import com.lekan.bodyfattracker.data.local.SavedVideoDao
 import com.lekan.bodyfattracker.data.local.WeightEntryDao // Import the new DAO
 import dagger.Module
 import dagger.Provides
@@ -47,6 +48,12 @@ object DatabaseModule {
     @Singleton // Ensure DAO is a singleton
     fun provideWeightEntryDao(appDatabase: AppDatabase): WeightEntryDao {
         return appDatabase.weightEntryDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideSavedVideoDao(appDatabase: AppDatabase): SavedVideoDao {
+        return appDatabase.savedVideoDao()
     }
 }
 
