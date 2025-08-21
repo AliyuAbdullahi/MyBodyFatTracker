@@ -36,6 +36,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -71,6 +72,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil3.compose.AsyncImage
 import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.crossfade
@@ -142,15 +144,24 @@ fun ProfileScreen(
         floatingActionButton = {
             if (!uiState.isEditing && !uiState.showCreateProfileButton && uiState.userProfile != null) {
                 FloatingActionButton(onClick = viewModel::onEditProfile) {
-                    Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.edit_profile_button))
+                    Icon(
+                        Icons.Filled.Edit,
+                        contentDescription = stringResource(R.string.edit_profile_button)
+                    )
                 }
             }
         },
         floatingActionButtonPosition = FabPosition.End
     ) { paddingValues ->
 
-        if (uiState.isLoading && uiState.userProfile?.name?.isNotBlank()?.let { !it } == true && !uiState.isEditing && !uiState.showCreateProfileButton) {
-            Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
+        if (uiState.isLoading && uiState.userProfile?.name?.isNotBlank()
+                ?.let { !it } == true && !uiState.isEditing && !uiState.showCreateProfileButton
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues), contentAlignment = Alignment.Center
+            ) {
                 CircularProgressIndicator()
             }
         } else {
@@ -162,14 +173,28 @@ fun ProfileScreen(
 
             AnimatedContent(
                 targetState = targetContentState,
-                modifier = Modifier.padding(paddingValues).fillMaxSize(), // Apply padding here
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .fillMaxSize(), // Apply padding here
                 transitionSpec = {
                     if (targetState == ProfileContent.FORM && initialState == ProfileContent.OVERVIEW) {
-                        slideInHorizontally { fullWidth -> fullWidth } + fadeIn(animationSpec = tween(300)) togetherWith
-                                slideOutHorizontally { fullWidth -> -fullWidth } + fadeOut(animationSpec = tween(300))
+                        slideInHorizontally { fullWidth -> fullWidth } + fadeIn(
+                            animationSpec = tween(
+                                300
+                            )
+                        ) togetherWith
+                                slideOutHorizontally { fullWidth -> -fullWidth } + fadeOut(
+                            animationSpec = tween(300)
+                        )
                     } else if (targetState == ProfileContent.OVERVIEW && initialState == ProfileContent.FORM) {
-                        slideInHorizontally { fullWidth -> -fullWidth } + fadeIn(animationSpec = tween(300)) togetherWith
-                                slideOutHorizontally { fullWidth -> fullWidth } + fadeOut(animationSpec = tween(300))
+                        slideInHorizontally { fullWidth -> -fullWidth } + fadeIn(
+                            animationSpec = tween(
+                                300
+                            )
+                        ) togetherWith
+                                slideOutHorizontally { fullWidth -> fullWidth } + fadeOut(
+                            animationSpec = tween(300)
+                        )
                     } else {
                         fadeIn(animationSpec = tween(220, delayMillis = 90)) togetherWith
                                 fadeOut(animationSpec = tween(90))
@@ -191,11 +216,12 @@ fun ProfileScreen(
                             onBodyFatGoalChange = viewModel::onBodyFatGoalChanged,
                             onGenderSelect = viewModel::onGenderSelected,
                             onPhotoPickerClick = {
-                                val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                    Manifest.permission.READ_MEDIA_IMAGES
-                                } else {
-                                    Manifest.permission.READ_EXTERNAL_STORAGE
-                                }
+                                val permission =
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                        Manifest.permission.READ_MEDIA_IMAGES
+                                    } else {
+                                        Manifest.permission.READ_EXTERNAL_STORAGE
+                                    }
                                 permissionLauncher.launch(permission)
                             },
                             onSaveClicked = viewModel::saveProfile,
@@ -206,6 +232,7 @@ fun ProfileScreen(
                             onPrivacyPolicyClicked = viewModel::onPrivacyPolicyClicked
                         )
                     }
+
                     ProfileContent.OVERVIEW -> {
                         uiState.userProfile?.let { // Ensure userProfile is not null
                             ProfileOverview(
@@ -215,23 +242,33 @@ fun ProfileScreen(
                                 photoPath = it.photoPath,
                                 bodyFatGoal = it.bodyFatPercentGoal?.toString() ?: "N/A",
                                 gender = it.gender,
-                                onEditProfileClicked = viewModel::onEditProfile,
                                 onAboutAppClicked = viewModel::onAboutAppClicked,
                                 onPrivacyPolicyClicked = viewModel::onPrivacyPolicyClicked
                             )
-                        } ?: Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { // Fallback if userProfile somehow null
+                        } ?: Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) { // Fallback if userProfile somehow null
                             Text("Profile data is unavailable.")
                             Button(onClick = viewModel::onCreateProfileClicked) {
                                 Text("Create Profile")
                             }
                         }
                     }
+
                     ProfileContent.EMPTY_FALLBACK -> {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
                             if (uiState.isLoading) { // Show loading specifically for this case
                                 CircularProgressIndicator()
                             } else {
-                                Text("No profile found. Create one to get started!", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(16.dp))
+                                Text(
+                                    "No profile found. Create one to get started!",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    modifier = Modifier.padding(16.dp)
+                                )
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Button(onClick = viewModel::onCreateProfileClicked) {
                                     Text("Create Profile")
@@ -369,7 +406,8 @@ fun ProfileForm(
             modifier = Modifier.fillMaxWidth()
         ) {
             OutlinedTextField(
-                value = selectedGender?.name ?: "Select Gender", // Ensure Gender enum has displayName
+                value = selectedGender?.name
+                    ?: "Select Gender", // Ensure Gender enum has displayName
                 onValueChange = {},
                 label = { Text("Gender") },
                 readOnly = true,
@@ -378,7 +416,9 @@ fun ProfileForm(
                         ExposedDropdownMenuDefaults.TrailingIcon(expanded = genderDropdownExpanded)
                     }
                 },
-                modifier = Modifier.menuAnchor().fillMaxWidth()
+                modifier = Modifier
+                    .menuAnchor()
+                    .fillMaxWidth()
             )
             ExposedDropdownMenu(
                 expanded = genderDropdownExpanded,
@@ -456,75 +496,107 @@ fun ProfileOverview(
     photoPath: String?,
     bodyFatGoal: String,
     gender: Gender,
-    onEditProfileClicked: () -> Unit,
     onAboutAppClicked: () -> Unit,
     onPrivacyPolicyClicked: () -> Unit
 ) {
+    val context = LocalContext.current
     Column(
-        modifier = modifier // Use the modifier passed from AnimatedContent
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp), // Overall padding for the content
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        val context = LocalContext.current
-        Text("Profile Overview", style = MaterialTheme.typography.headlineMedium)
-        Spacer(modifier = Modifier.height(16.dp))
-
+        // Centered Profile Image
         Box(
             modifier = Modifier
-                .size(150.dp)
+                .size(120.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape),
-            contentAlignment = Alignment.Center
+                .background(MaterialTheme.colorScheme.surfaceVariant) // Placeholder background
+                .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape) // Optional border
         ) {
-            if (photoPath != null) {
-                val imageRequest = remember(photoPath) {
-                    ImageRequest.Builder(context)
-                        .data(File(photoPath))
-                        .crossfade(true)
-                        .placeholder(R.drawable.camera_image) // Replace with a more generic placeholder if needed
-                        .error(R.drawable.camera_image)
-                        .build()
-                }
-                Image(
-                    painter = rememberAsyncImagePainter(model = imageRequest),
-                    contentDescription = "Profile Photo",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-            } else {
-                Icon(
-                    painter = painterResource(R.drawable.camera_image), // Replace if needed
-                    contentDescription = "Profile Photo Placeholder",
-                    modifier = Modifier.size(72.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            AsyncImage(
+                model = photoPath,
+                contentDescription = stringResource(R.string.profile_picture_description), // Accessibility
+                contentScale = ContentScale.Crop,
+                placeholder = painterResource(R.drawable.camera_image), // Placeholder image
+                error = painterResource(R.drawable.camera_image), // Error image
+                modifier = Modifier.fillMaxSize()
+            )
         }
+        Spacer(modifier = Modifier.height(8.dp))
 
-        Text("Name: $name", style = MaterialTheme.typography.titleLarge)
-        Text("Age: $age", style = MaterialTheme.typography.titleMedium)
-        Text("Gender: ${gender.name}", style = MaterialTheme.typography.titleMedium) // Ensure Gender has displayName
-        Text("Body Fat Goal: $bodyFatGoal%", style = MaterialTheme.typography.titleMedium)
+        // Centered Title (User's Name)
+        Text(
+            text = name, // User's name as the main title below the image
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.padding(vertical = 16.dp)
+        )
 
-        //Spacer(modifier = Modifier.weight(1f)) // Pushes buttons down if needed
+        // --- Left-aligned informational items ---
+        Column(modifier = Modifier.fillMaxWidth()) {
 
-        Button(onClick = onEditProfileClicked, modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.edit_profile_button)) // Ensure this string exists
+            // Age
+            Text(
+                text = stringResource(R.string.profile_age_display, age), // Example: "Age: 30"
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 16.dp)
+            )
+            Divider(modifier = Modifier.padding(horizontal = 16.dp))
+
+            // Gender
+            Text(
+                text = stringResource(
+                    R.string.profile_gender_display,
+                    gender.toString()
+                        .replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() }), // Example: "Gender: Male"
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 16.dp)
+            )
+            Divider(modifier = Modifier.padding(horizontal = 16.dp))
+
+            // Body Fat Goal
+            Text(
+                text = stringResource(
+                    R.string.profile_body_fat_goal_display,
+                    bodyFatGoal
+                ), // Example: "Body Fat Goal: 15%"
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 16.dp)
+            )
+            Divider(modifier = Modifier.padding(horizontal = 16.dp))
+
+            // About App
+            Text(
+                text = stringResource(R.string.profile_about_app_link), // Example: "About App"
+                style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.primary),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onAboutAppClicked)
+                    .padding(
+                        horizontal = 16.dp,
+                        vertical = 12.dp
+                    ) // Slightly more padding for clickable items
+            )
+            Divider(modifier = Modifier.padding(horizontal = 16.dp))
+
+            // Privacy Policy
+            Text(
+                text = stringResource(R.string.profile_privacy_policy_link), // Example: "Privacy Policy"
+                style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.primary),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onPrivacyPolicyClicked)
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            )
+            // No divider after the last item for a cleaner look
         }
-        TextButton(
-            onClick = onAboutAppClicked,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("About App")
-        }
-        TextButton(
-            onClick = onPrivacyPolicyClicked,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Privacy Policy")
-        }
+        Spacer(modifier = Modifier.height(16.dp)) // Spacer at the bottom for scroll padding
     }
 }

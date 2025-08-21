@@ -85,6 +85,7 @@ fun HomeScreen(
     onStartThreeSitesGuest: () -> Unit,
     onStartSevenSitesGuest: () -> Unit
 ) {
+    val titleList = listOf(R.string.let_get_started, R.string.let_work_on_your_goals, R.string.let_work_on_your_goals)
     val uiState by viewModel.state.collectAsState()
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -145,7 +146,7 @@ fun HomeScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.welcome_user)) },
+                title = { Text(stringResource(titleList[uiState.messageIndex])) },
                 windowInsets = WindowInsets(0),
             )
         },
@@ -240,8 +241,8 @@ fun HomeScreen(
                     CircularProgressIndicator()
                 } else {
                     if (userProfile != null) {
-                        HorizontalDivider()
-                        Spacer(modifier = Modifier.height(8.dp))
+                        // REMOVED: HorizontalDivider()
+                        Spacer(modifier = Modifier.height(4.dp)) // Reduced from 8.dp
 
                         // Reminder Section
                        Row (
@@ -286,12 +287,12 @@ fun HomeScreen(
 
                         AnimatedVisibility(visible = uiState.isReminderEnabled) {
                             Column {
-                                Spacer(modifier = Modifier.height(4.dp)) // Changed from 8.dp
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable(onClick = { showTimePickerDialog = true })
-                                        .padding(vertical = 4.dp), // Changed from 8.dp
+                                        .padding(vertical = 4.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
@@ -312,9 +313,9 @@ fun HomeScreen(
                                 }
                             }
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        HorizontalDivider()
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(4.dp)) // Reduced from 8.dp
+                        // REMOVED: HorizontalDivider()
+                        Spacer(modifier = Modifier.height(8.dp)) // This spacer might still be needed before the next card
                     } else {
                         Text(stringResource(R.string.no_profile_setup))
                     }
@@ -346,5 +347,3 @@ fun HomeScreen(
         }
     }
 }
-
-

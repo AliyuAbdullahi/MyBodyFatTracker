@@ -13,6 +13,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.random.Random
 
 data class HomeUiState(
     val isLoading: Boolean = true,
@@ -22,7 +23,8 @@ data class HomeUiState(
     val recentWeightEntries: List<WeightEntry> = emptyList(), // Added this line
     val isReminderEnabled: Boolean = false, // Added
     val reminderHour: Int? = null,          // Added
-    val reminderMinute: Int? = null
+    val reminderMinute: Int? = null,
+    val messageIndex: Int = Random.nextInt(3)
 )
 
 @HiltViewModel
@@ -50,7 +52,6 @@ class HomeViewModel @Inject constructor(
         observeAllHomeData()
         observeReminderPreferences()
     }
-
 
     private fun observeReminderPreferences() {
         viewModelScope.launch {

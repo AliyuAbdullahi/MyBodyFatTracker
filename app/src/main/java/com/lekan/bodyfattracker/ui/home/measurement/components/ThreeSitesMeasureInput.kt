@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -164,9 +165,7 @@ fun ThreeSitesMeasureInput(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween // Pushes title and icon apart
         ) {
-            Text(
-                text = stringResource(R.string.three_site_skinfold_title),
-                style = MaterialTheme.typography.titleLarge,
+            Spacer(
                 modifier = Modifier.weight(1f) // Title takes available space
             )
             IconButton(onClick = onResetClicked) {

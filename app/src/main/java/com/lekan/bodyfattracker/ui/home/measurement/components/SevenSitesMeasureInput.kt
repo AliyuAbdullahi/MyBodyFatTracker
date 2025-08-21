@@ -142,11 +142,7 @@ fun SevenSitesMeasureInput(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
-                text = stringResource(R.string.seven_site_skinfold_title),
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(bottom = 16.dp) // Keep this padding or adjust as needed
-            )
+            Spacer(modifier = Modifier.weight(1F))
             IconButton(onClick = onResetClicked) {
                 Icon(
                     imageVector = Icons.Filled.Refresh,

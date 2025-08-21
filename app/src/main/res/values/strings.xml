@@ -188,5 +188,54 @@
     <string name="delete_all_cloud_videos_cd">Delete all cloud videos</string>
     <string name="selected_items_title">%1$d selected</string>
     <string name="delete_video_cd">Delete video</string>
+    <string name="welcome_we_believe_in_you">Welcome! We believe in you.🫵🏽</string>
+    <string name="let_get_started">Let\'s get started🙌🏾</string>
+    <string name="let_work_on_your_goals">Let\'s make it happen💪🏾</string>
+    <string name="profile_picture_description">User\'s profile picture</string>
+    <string name="profile_age_display">Age: %s</string>
+    <string name="profile_gender_display">Gender: %s</string>
+    <string name="profile_body_fat_goal_display">Body Fat Goal: %s</string>
+    <string name="profile_about_app_link">About App</string>
+    <string name="profile_privacy_policy_link">Privacy Policy</string>
+
+    <string name="info_sheet_title">How to Measure (3-Site Method)</string>
+    <string name="info_general_tips_title">General Tips:</string>
+    <string name="info_tip_1">Take all measurements on the right side of the body.</string>
+    <string name="info_tip_2">Ensure the skin is dry and do not measure after exercise.</string>
+    <string name="info_tip_3">Pinch the skinfold firmly with your thumb and index finger. Place the caliper jaws perpendicular to the fold, 1 cm below your fingers.</string>
+    <string name="info_tip_4">Release the caliper trigger slowly and take the reading after 2 seconds.</string>
+    <string name="info_tip_5">Take at least two measurements at each site and average them if they differ by more than 1-2 mm.</string>
+
+    <string name="info_male_sites_title">For Men:</string>
+    <string name="info_male_site_1_chest">1. Chest: A diagonal fold taken midway between the nipple and the anterior axillary line (front of the armpit).</string>
+    <string name="info_male_site_2_abdomen">2. Abdomen: A vertical fold taken 2 cm (about 1 inch) to the right of the navel.</string>
+    <string name="info_male_site_3_thigh">3. Thigh: A vertical fold on the anterior midline of the thigh, midway between the hip and knee.</string>
+
+    <string name="info_female_sites_title">For Women:</string>
+    <string name="info_female_site_1_triceps">1. Triceps: A vertical fold on the posterior midline of the upper arm, halfway between the acromion (shoulder tip) and olecranon (elbow tip).</string>
+    <string name="info_female_site_2_suprailiac">2. Suprailiac: A diagonal fold just above the iliac crest (hip bone) in line with the natural angle of the bone, taken at the anterior axillary line.</string>
+    <string name="info_female_site_3_thigh">3. Thigh: A vertical fold on the anterior midline of the thigh, midway between the hip and knee.</string>
+
+    <string name="close">Close</string>
+    <string name="info_icon_description">Info</string>
+    <string name="seven_sites_info_title">Seven Sites Measurement</string>
+
+    <!-- Strings for 3-Site Info Bottom Sheet -->
+    <string name="info_sheet_title_3_site">How to Measure (3-Site Method)</string> <!-- Specific title for 3-site -->
+    <string name="info_female_site_3_thigh_women">3. Thigh: A vertical fold on the anterior midline of the thigh, midway between the hip and knee.</string> <!-- Consider if different from male_site_3_thigh string value -->
+
+
+    <!-- For SevenSitesMeasurementScreen -->
+
+    <!-- Strings for 7-Site Info Bottom Sheet -->
+    <string name="info_seven_sites_list_title">The Seven Sites:</string>
+    <string name="info_site_chest">Chest: Diagonal fold, one-half the distance between the anterior axillary line and the nipple (men), or one-third of this distance (women).</string>
+    <string name="info_site_midaxillary">Midaxillary: Vertical fold on the midaxillary line at the level of the xiphoid process (the bottom of the sternum).</string>
+    <string name="info_site_triceps">Triceps: Vertical fold on the posterior midline of the upper arm, halfway between the acromion (shoulder tip) and the olecranon (elbow tip).</string> <!-- Can be same as female_site_1_triceps -->
+    <string name="info_site_subscapular">Subscapular: Diagonal fold (at a 45-degree angle) 1–2 cm below the inferior angle of the scapula (shoulder blade).</string>
+    <string name="info_site_abdomen">Abdomen: Vertical fold, 2 cm to the right side of the umbilicus (navel).</string> <!-- Can be same as male_site_2_abdomen -->
+    <string name="info_site_suprailiac">Suprailiac: Diagonal fold in line with the natural angle of the iliac crest taken in the anterior axillary line immediately superior to the iliac crest.</string> <!-- Can be same as female_site_2_suprailiac -->
+    <string name="info_site_thigh">Thigh: Vertical fold on the anterior midline of the thigh, midway between the proximal border of the patella (upper knee) and the inguinal crease (hip).</string> <!-- Can be same as male_site_3_thigh / female_site_3_thigh -->
+
 
 </resources>
