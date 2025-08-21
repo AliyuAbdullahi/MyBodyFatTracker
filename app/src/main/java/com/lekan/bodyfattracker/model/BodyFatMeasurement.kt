@@ -1,7 +1,9 @@
 package com.lekan.bodyfattracker.model
 
+import android.content.Context
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.lekan.bodyfattracker.R
 import androidx.room.TypeConverters // For MeasurementMethodConverter
 import com.lekan.bodyfattracker.data.local.MeasurementMethodConverter // Assuming path
 
@@ -24,3 +26,9 @@ data class BodyFatMeasurement(
     val method: MeasurementMethod, // Changed from 'type' to 'method' and used the new enum
     val notes: String? = null // Optional notes for the measurement
 )
+
+fun MeasurementMethod.getLocalisedMethodName(context: Context) = when(this) {
+    MeasurementMethod.THREE_POINTS -> context.getString(R.string.three_points)
+    MeasurementMethod.SEVEN_POINTS -> context.getString(R.string.seven_points)
+    MeasurementMethod.OTHER -> context.getString(R.string.other)
+}

@@ -236,6 +236,14 @@
     <string name="info_site_abdomen">Abdomen: Vertical fold, 2 cm to the right side of the umbilicus (navel).</string> <!-- Can be same as male_site_2_abdomen -->
     <string name="info_site_suprailiac">Suprailiac: Diagonal fold in line with the natural angle of the iliac crest taken in the anterior axillary line immediately superior to the iliac crest.</string> <!-- Can be same as female_site_2_suprailiac -->
     <string name="info_site_thigh">Thigh: Vertical fold on the anterior midline of the thigh, midway between the proximal border of the patella (upper knee) and the inguinal crease (hip).</string> <!-- Can be same as male_site_3_thigh / female_site_3_thigh -->
+    <string name="three_points">Three Points</string>
+    <string name="seven_points">Seven Points</string>
+    <string name="other">Other</string>
 
-
+    <string name="male">Male</string>
+    <string name="female">Female</string>
+    <string name="weight_progression_kg">Weight Progression(Kg)</string>
+    <string name="weight_kg">Weight (kg)</string>
+    <string name="recorded_on_label">Recorded on: %1$s</string>
+    <string name="notes">Notes: %1$s</string>
 </resources>

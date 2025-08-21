@@ -21,9 +21,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.lekan.bodyfattracker.R
 import com.lekan.bodyfattracker.model.WeightEntry
+import com.lekan.bodyfattracker.model.WeightUnit
 import com.lekan.bodyfattracker.ui.core.ui.ProgressChart
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
@@ -63,14 +66,26 @@ fun LatestWeightEntryCard(
                     verticalAlignment = Alignment.Bottom,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
+                    // if weight unit was kg, we convert to lbs first else we show weight
+                    val actualWeight = when (latestWeightEntry.unit) {
+                        WeightUnit.KG -> latestWeightEntry.weight
+                        WeightUnit.LBS -> latestWeightEntry.weight * 2.20462
+                    }
+
                     Text(
-                        text = "${String.format(Locale.US, "%.1f", latestWeightEntry.weight)} ${latestWeightEntry.unit}",
+                        text = "${
+                            String.format(
+                                Locale.US,
+                                "%.1f",
+                                actualWeight
+                            )
+                        } ${latestWeightEntry.unit}",
                         style = MaterialTheme.typography.headlineMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
                     if (latestWeightEntry.notes?.isNotBlank() == true) {
                         Text(
-                            text = "Notes: ${latestWeightEntry.notes}",
+                            text = stringResource(R.string.notes, latestWeightEntry.notes),
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.align(Alignment.CenterVertically)
                         )
@@ -78,7 +93,7 @@ fun LatestWeightEntryCard(
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Recorded on: $formattedDate",
+                    text = stringResource(R.string.recorded_on_label, formattedDate),
                     style = MaterialTheme.typography.bodySmall
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -96,14 +111,17 @@ fun LatestWeightEntryCard(
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("Weight Progression", fontWeight = FontWeight.Bold)
+                    Text(
+                        stringResource(R.string.weight_progression_kg),
+                        fontWeight = FontWeight.Bold
+                    )
                     Spacer(modifier = Modifier.height(16.dp))
                     val color = MaterialTheme.colorScheme.primary
                     ProgressChart(
                         modifier = Modifier.fillMaxWidth(),
                         entries = recentWeightEntries.map { it.timeStamp to it.weight.toFloat() },
                         lineColor = color,
-                        yAxisTitle = "Weight (kg)"
+                        yAxisTitle = stringResource(R.string.weight_kg)
                     )
                 }
 

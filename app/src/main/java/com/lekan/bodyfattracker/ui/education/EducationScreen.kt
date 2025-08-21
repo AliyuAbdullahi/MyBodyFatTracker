@@ -63,6 +63,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import com.lekan.bodyfattracker.BuildConfig
 import com.lekan.bodyfattracker.R
 import com.lekan.bodyfattracker.ui.ads.AdmobBanner
 import kotlinx.coroutines.launch
@@ -108,7 +109,12 @@ fun EducationScreen(
             TopAppBar(
                 title = {
                     if (uiState.isSuperUser && uiState.isSelectionModeActive && uiState.currentTab == 0) {
-                        Text(stringResource(R.string.selected_items_title, uiState.selectedVideoIds.size))
+                        Text(
+                            stringResource(
+                                R.string.selected_items_title,
+                                uiState.selectedVideoIds.size
+                            )
+                        )
                     } else {
                         Text(stringResource(R.string.education_tab_title))
                     }
@@ -265,7 +271,10 @@ fun CloudVideosTabContent(
     viewModel: EducationViewModel,
     onItemClick: (VideoInfo) -> Unit
 ) {
-    Log.d("EducationScreen", "CloudVideosTabContent recomposing. isLoading: ${uiState.isLoadingCloud}, videos count: ${uiState.filteredCloudVideos.size}, error: ${uiState.error}, query: ${uiState.searchQuery}")
+    Log.d(
+        "EducationScreen",
+        "CloudVideosTabContent recomposing. isLoading: ${uiState.isLoadingCloud}, videos count: ${uiState.filteredCloudVideos.size}, error: ${uiState.error}, query: ${uiState.searchQuery}"
+    )
 
     Column(modifier = Modifier.fillMaxSize()) {
         OutlinedTextField(
@@ -287,7 +296,10 @@ fun CloudVideosTabContent(
             singleLine = true
         )
 
-        AdmobBanner(modifier = Modifier.fillMaxWidth())
+        AdmobBanner(
+            modifier = Modifier.fillMaxWidth(),
+            adUnitId = BuildConfig.EDUCATION_BANNER_AD_UNIT_ID
+        )
 
         if (uiState.isLoadingCloud) {
             Column(
@@ -311,46 +323,60 @@ fun CloudVideosTabContent(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Text(if (uiState.searchQuery.isNotEmpty()) stringResource(R.string.no_videos_found_search) else stringResource(R.string.no_videos_available))
+                Text(
+                    if (uiState.searchQuery.isNotEmpty()) stringResource(R.string.no_videos_found_search) else stringResource(
+                        R.string.no_videos_available
+                    )
+                )
             }
         } else {
             val confirmDeleteTitle = stringResource(R.string.confirm_delete_title)
-            val confirmDeleteMessage =  stringResource(R.string.confirm_delete_single_message)
+            val confirmDeleteMessage = stringResource(R.string.confirm_delete_single_message)
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(uiState.filteredCloudVideos, key = { "cloud-${it.id}" }) { video ->
-                    VideoListItem(
-                        videoInfo = video,
-                        onItemClick = { onItemClick(video) }, // For playback
-                        isBookmarked = video.id in uiState.savedVideoIds,
-                        onBookmarkToggle = {
-                            if (video.id in uiState.savedVideoIds) {
-                                viewModel.unbookmarkVideo(video)
-                            } else {
-                                viewModel.bookmarkVideo(video)
-                            }
-                        },
-                        // Superuser and selection related parameters
-                        isSuperUser = uiState.isSuperUser,
-                        isCloudVideoItem = true,
-                        isSelectionModeActive = uiState.isSelectionModeActive,
-                        isSelected = video.id in uiState.selectedVideoIds,
-                        onVideoLongClick = { viewModel.onVideoLongPress(video) },
-                        onVideoShortClickInSelection = { viewModel.onVideoShortPressSelection(video) },
-                        onVideoShortClickForSingleDelete = {
-                            viewModel.prepareDeleteSingleVideoFromTap(
-                                videoInfo = video,
-                                title = confirmDeleteTitle,
-                                messageFormat = confirmDeleteMessage
-                            )
-                        },
-                        // Saved video specific parameters (not used here)
-                        showDeleteActionForSavedVideo = false,
-                        onDeleteSavedVideoClick = null
-                    )
+                    Column {
+                        VideoListItem(
+                            videoInfo = video,
+                            onItemClick = { onItemClick(video) }, // For playback
+                            isBookmarked = video.id in uiState.savedVideoIds,
+                            onBookmarkToggle = {
+                                if (video.id in uiState.savedVideoIds) {
+                                    viewModel.unbookmarkVideo(video)
+                                } else {
+                                    viewModel.bookmarkVideo(video)
+                                }
+                            },
+                            // Superuser and selection related parameters
+                            isSuperUser = uiState.isSuperUser,
+                            isCloudVideoItem = true,
+                            isSelectionModeActive = uiState.isSelectionModeActive,
+                            isSelected = video.id in uiState.selectedVideoIds,
+                            onVideoLongClick = { viewModel.onVideoLongPress(video) },
+                            onVideoShortClickInSelection = {
+                                viewModel.onVideoShortPressSelection(
+                                    video
+                                )
+                            },
+                            onVideoShortClickForSingleDelete = {
+                                viewModel.prepareDeleteSingleVideoFromTap(
+                                    videoInfo = video,
+                                    title = confirmDeleteTitle,
+                                    messageFormat = confirmDeleteMessage
+                                )
+                            },
+                            // Saved video specific parameters (not used here)
+                            showDeleteActionForSavedVideo = false,
+                            onDeleteSavedVideoClick = null
+                        )
+                        if (uiState.filteredCloudVideos.indexOf(video) == uiState.filteredCloudVideos.lastIndex) {
+                            Spacer(modifier = Modifier.height(48.dp))
+                        }
+                    }
                 }
+
                 item { Spacer(modifier = Modifier.height(8.dp)) } // For padding at the bottom
             }
         }
@@ -378,23 +404,28 @@ fun SavedVideosTabContent(
         ) {
             item { Spacer(modifier = Modifier.height(8.dp)) }
             items(uiState.savedVideosList, key = { "saved-${it.id}" }) { video ->
-                VideoListItem(
-                    videoInfo = video,
-                    onItemClick = { onItemClick(video) }, // For playback
-                    // Cloud video specific parameters (not used here)
-                    isBookmarked = null, // Saved videos aren't bookmarked in this context
-                    onBookmarkToggle = null,
-                    isSuperUser = uiState.isSuperUser, // Pass for consistency, though actions are gated by isCloudVideoItem
-                    isCloudVideoItem = false,
-                    isSelectionModeActive = false, // Selection mode is for cloud videos
-                    isSelected = false,
-                    onVideoLongClick = null,
-                    onVideoShortClickInSelection = null,
-                    onVideoShortClickForSingleDelete = null,
-                    // Saved video specific parameters
-                    showDeleteActionForSavedVideo = true,
-                    onDeleteSavedVideoClick = { viewModel.deleteSavedVideo(video) }
-                )
+                Column {
+                    VideoListItem(
+                        videoInfo = video,
+                        onItemClick = { onItemClick(video) }, // For playback
+                        // Cloud video specific parameters (not used here)
+                        isBookmarked = null, // Saved videos aren't bookmarked in this context
+                        onBookmarkToggle = null,
+                        isSuperUser = uiState.isSuperUser, // Pass for consistency, though actions are gated by isCloudVideoItem
+                        isCloudVideoItem = false,
+                        isSelectionModeActive = false, // Selection mode is for cloud videos
+                        isSelected = false,
+                        onVideoLongClick = null,
+                        onVideoShortClickInSelection = null,
+                        onVideoShortClickForSingleDelete = null,
+                        // Saved video specific parameters
+                        showDeleteActionForSavedVideo = true,
+                        onDeleteSavedVideoClick = { viewModel.deleteSavedVideo(video) }
+                    )
+                    if (uiState.filteredCloudVideos.indexOf(video) == uiState.filteredCloudVideos.lastIndex) {
+                        Spacer(modifier = Modifier.height(48.dp))
+                    }
+                }
             }
             item { Spacer(modifier = Modifier.height(8.dp)) }
         }
@@ -455,7 +486,9 @@ fun VideoListItem(
             if (isSuperUser && isCloudVideoItem && isSelectionModeActive) {
                 Icon(
                     imageVector = if (isSelected) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
-                    contentDescription = if (isSelected) stringResource(R.string.selected_cd) else stringResource(R.string.not_selected_cd),
+                    contentDescription = if (isSelected) stringResource(R.string.selected_cd) else stringResource(
+                        R.string.not_selected_cd
+                    ),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(end = 8.dp)
                 )
@@ -495,7 +528,7 @@ fun VideoListItem(
                 }
             }
             // Bookmark toggle for cloud videos (not in selection mode, or for non-superusers)
-            if (isCloudVideoItem && (!isSelectionModeActive || !isSuperUser) ) { // Only show bookmark if not in selection mode OR not a superuser in selection mode
+            if (isCloudVideoItem && (!isSelectionModeActive || !isSuperUser)) { // Only show bookmark if not in selection mode OR not a superuser in selection mode
                 isBookmarked?.let { bookmarked ->
                     onBookmarkToggle?.let { toggle ->
                         IconButton(onClick = toggle) {

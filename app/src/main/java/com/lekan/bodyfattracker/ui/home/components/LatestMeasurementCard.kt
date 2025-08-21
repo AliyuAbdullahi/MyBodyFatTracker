@@ -17,9 +17,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.lekan.bodyfattracker.model.BodyFatMeasurement
 import com.lekan.bodyfattracker.model.UserProfile
+import com.lekan.bodyfattracker.model.getLocalisedMethodName
 import com.lekan.bodyfattracker.ui.home.BodyFatGoalProgressIndicator
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -62,7 +64,9 @@ fun LatestMeasurementCard(
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "Method: ${latestMeasurement.method.name}",
+                        text = "Method: ${latestMeasurement.method.getLocalisedMethodName(
+                            LocalContext.current
+                        )}",
                         style = MaterialTheme.typography.bodySmall
                     )
                 }

@@ -52,6 +52,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -63,6 +64,7 @@ import com.lekan.bodyfattracker.model.BodyFatMeasurement
 import com.lekan.bodyfattracker.model.MeasurementMethod
 import com.lekan.bodyfattracker.model.WeightEntry
 import com.lekan.bodyfattracker.model.WeightUnit
+import com.lekan.bodyfattracker.model.getLocalisedMethodName
 import com.lekan.bodyfattracker.ui.core.ui.ProgressChart // Added import for ProgressChart
 import com.lekan.bodyfattracker.ui.theme.BodyFatTrackerTheme
 import java.text.SimpleDateFormat
@@ -480,7 +482,7 @@ fun MeasurementHistoryCard(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Method: ${measurement.method.name}",
+                    text = "Method: ${measurement.method.getLocalisedMethodName(LocalContext.current)}",
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Spacer(modifier = Modifier.height(4.dp))

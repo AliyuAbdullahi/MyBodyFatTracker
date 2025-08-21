@@ -24,6 +24,8 @@ android {
     namespace = "com.lekan.bodyfattracker"
     compileSdk = 36
 
+    buildFeatures.buildConfig = true
+
     defaultConfig {
         applicationId = "com.lekan.bodyfattracker"
         minSdk = 24

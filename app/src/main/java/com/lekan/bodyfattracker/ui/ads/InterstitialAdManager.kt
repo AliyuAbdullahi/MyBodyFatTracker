@@ -7,9 +7,10 @@ import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.gms.ads.FullScreenContentCallback // Correct import
+import com.lekan.bodyfattracker.BuildConfig
 
 // Test Ad Unit ID for Interstitial Ads. Replace with your actual ID for release.
-const val TEST_INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712"
+const val INTERSTITIAL_AD_UNIT_ID = BuildConfig.EDUCATION_INTERSTITIAL_AD_UNIT_ID
 
 object InterstitialAdManager {
 
@@ -25,7 +26,7 @@ object InterstitialAdManager {
      * Loads an interstitial ad.
      * Call this in advance of when you want to show the ad (e.g., when a screen is created).
      */
-    fun loadAd(context: Context, adUnitId: String = TEST_INTERSTITIAL_AD_UNIT_ID) {
+    fun loadAd(context: Context, adUnitId: String = INTERSTITIAL_AD_UNIT_ID) {
         if (isLoadingAd || mInterstitialAd != null || isAdShowing) {
             return // Ad is already loaded, loading, or showing
         }

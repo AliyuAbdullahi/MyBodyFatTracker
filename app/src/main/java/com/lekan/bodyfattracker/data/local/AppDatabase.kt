@@ -14,14 +14,14 @@ import com.lekan.bodyfattracker.model.WeightEntry // Import WeightEntry
         WeightEntry::class,
         SavedVideoEntity::class
     ],
-    version = 3,
+    version = 3, // This will likely need to be incremented later due to schema changes
     exportSchema = false
 )
 @TypeConverters(
     DateConverter::class,
     GenderConverter::class,
-    MeasurementMethodConverter::class,
-    WeightUnitConverter::class
+    MeasurementMethodConverter::class
+    // WeightUnitConverter::class, // <-- REMOVED THIS LINE
 )
 abstract class AppDatabase : RoomDatabase() {
 

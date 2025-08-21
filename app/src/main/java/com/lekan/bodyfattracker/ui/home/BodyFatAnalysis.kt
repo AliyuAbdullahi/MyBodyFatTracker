@@ -1,11 +1,18 @@
 package com.lekan.bodyfattracker.ui.home
 
+import android.content.Context
 import kotlin.math.pow
+import com.lekan.bodyfattracker.R
 
 // Enum to define gender for clarity and safety
 enum class Gender {
     MALE,
     FEMALE
+}
+
+fun Gender.formatLocally(context: Context) = when(this) {
+    Gender.MALE -> context.getString(R.string.male)
+    Gender.FEMALE -> context.getString(R.string.female)
 }
 
 /**

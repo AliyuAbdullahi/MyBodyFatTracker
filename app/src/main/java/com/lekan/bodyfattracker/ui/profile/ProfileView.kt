@@ -80,9 +80,11 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.request.error
 import coil3.request.placeholder
+import com.lekan.bodyfattracker.BuildConfig.PROFILE_BANNER_AD_UNIT_ID
 import com.lekan.bodyfattracker.R
 import com.lekan.bodyfattracker.ui.ads.AdmobBanner
 import com.lekan.bodyfattracker.ui.home.Gender
+import com.lekan.bodyfattracker.ui.home.formatLocally
 import java.io.File
 
 // Define this enum at the top level of the file or inside a relevant scope
@@ -298,16 +300,6 @@ fun ProfileScreen(
                 sheetState = sheetState
             ) {
                 AboutAppBottomSheet(onDismiss = viewModel::onDismissAboutApp)
-            }
-        }
-
-        if (uiState.showPrivacyPolicySheet) {
-            val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-            ModalBottomSheet(
-                onDismissRequest = viewModel::onDismissPrivacyPolicy,
-                sheetState = sheetState
-            ) {
-                PrivacyPolicyBottomSheet(onDismiss = viewModel::onDismissPrivacyPolicy)
             }
         }
     }
@@ -555,15 +547,14 @@ fun ProfileOverview(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 16.dp)
             )
-            AdmobBanner(modifier = Modifier.fillMaxWidth())
+            AdmobBanner(modifier = Modifier.fillMaxWidth(), adUnitId = PROFILE_BANNER_AD_UNIT_ID)
             Divider(modifier = Modifier.padding(horizontal = 16.dp))
 
             // Gender
             Text(
                 text = stringResource(
                     R.string.profile_gender_display,
-                    gender.toString()
-                        .replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() }), // Example: "Gender: Male"
+                    gender.formatLocally(LocalContext.current)), // Example: "Gender: Male"
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier
                     .fillMaxWidth()

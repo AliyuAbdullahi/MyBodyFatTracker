@@ -2,17 +2,15 @@ package com.lekan.bodyfattracker.ui.profile
 
 import android.content.Context
 import android.net.Uri
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lekan.bodyfattracker.data.UserPreferencesRepository
 import com.lekan.bodyfattracker.domain.IProfileRepository
 import com.lekan.bodyfattracker.model.UserProfile
+import com.lekan.bodyfattracker.model.WeightUnit
+import com.lekan.bodyfattracker.ui.core.CoreViewModel
 import com.lekan.bodyfattracker.ui.home.Gender
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -35,23 +33,32 @@ data class ProfileScreenUiState(
     val errorMessage: String? = null,
     val profileSavedSuccessfully: Boolean = false,
     val showAboutSheet: Boolean = false,
-    val showPrivacyPolicySheet: Boolean = false
+    val showPrivacyPolicySheet: Boolean = false,
+    val selectedDisplayWeightUnit: WeightUnit = WeightUnit.KG // Added
 )
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
-    private val profileRepository: IProfileRepository
-) : ViewModel() {
+    private val profileRepository: IProfileRepository,
+    private val userPreferencesRepository: UserPreferencesRepository // Injected
+) : CoreViewModel<ProfileScreenUiState>() {
 
-    private val _uiState = MutableStateFlow(ProfileScreenUiState())
-    val state: StateFlow<ProfileScreenUiState> = _uiState.asStateFlow()
-
-    private fun updateState(reducer: ProfileScreenUiState.() -> ProfileScreenUiState) {
-        _uiState.update(reducer)
-    }
+    override fun initialize() = ProfileScreenUiState()
 
     init {
         loadProfile()
+        viewModelScope.launch {
+            userPreferencesRepository.userSettingsFlow.collect { settings ->
+                updateState { copy(selectedDisplayWeightUnit = settings.displayWeightUnit) }
+            }
+        }
+    }
+
+    fun updateDisplayWeightUnit(weightUnit: WeightUnit) {
+        viewModelScope.launch {
+            userPreferencesRepository.updateDisplayWeightUnit(weightUnit)
+            // The collect block above will automatically update the uiState
+        }
     }
 
     private fun loadProfile() {
@@ -95,16 +102,19 @@ class ProfileViewModel @Inject constructor(
 
     fun onEditProfile() {
         val currentLoadedProfile = state.value.userProfile
-        updateState {
-            copy(
-                isEditing = true,
-                nameInput = currentLoadedProfile?.name ?: state.value.nameInput,
-                ageInput = currentLoadedProfile?.age?.toString() ?: state.value.ageInput,
-                selectedGender = currentLoadedProfile?.gender ?: state.value.selectedGender,
-                bodyFatGoalInput = currentLoadedProfile?.bodyFatPercentGoal?.toString() ?: state.value.bodyFatGoalInput,
-                photoPath = currentLoadedProfile?.photoPath ?: state.value.photoPath,
-                showCreateProfileButton = false
-            ).let { validateInputsInternal(it) }
+        launch {
+            updateState {
+                copy(
+                    isEditing = true,
+                    nameInput = currentLoadedProfile?.name ?: state.value.nameInput,
+                    ageInput = currentLoadedProfile?.age?.toString() ?: state.value.ageInput,
+                    selectedGender = currentLoadedProfile?.gender ?: state.value.selectedGender,
+                    bodyFatGoalInput = currentLoadedProfile?.bodyFatPercentGoal?.toString()
+                        ?: state.value.bodyFatGoalInput,
+                    photoPath = currentLoadedProfile?.photoPath ?: state.value.photoPath,
+                    showCreateProfileButton = false
+                ).let { validateInputsInternal(it) }
+            }
         }
     }
 
@@ -112,65 +122,75 @@ class ProfileViewModel @Inject constructor(
         val lastLoadedProfile = state.value.userProfile
         if (lastLoadedProfile != null) {
             // Revert to the last loaded profile's state
-            updateState {
-                copy(
-                    isEditing = false,
-                    nameInput = lastLoadedProfile.name,
-                    ageInput = lastLoadedProfile.age.toString(),
-                    selectedGender = lastLoadedProfile.gender,
-                    bodyFatGoalInput = lastLoadedProfile.bodyFatPercentGoal?.toString() ?: "",
-                    photoPath = lastLoadedProfile.photoPath,
-                    canSave = false,
-                    errorMessage = null,
-                    showCreateProfileButton = false // Already has a profile
-                )
+            launch {
+                updateState {
+                    copy(
+                        isEditing = false,
+                        nameInput = lastLoadedProfile.name,
+                        ageInput = lastLoadedProfile.age.toString(),
+                        selectedGender = lastLoadedProfile.gender,
+                        bodyFatGoalInput = lastLoadedProfile.bodyFatPercentGoal?.toString() ?: "",
+                        photoPath = lastLoadedProfile.photoPath,
+                        canSave = false,
+                        errorMessage = null,
+                        showCreateProfileButton = false // Already has a profile
+                    )
+                }
             }
         } else {
             // Was creating a new profile, so reset to empty and show create button
-            updateState {
-                copy(
-                    isEditing = false,
-                    nameInput = "",
-                    ageInput = "",
-                    selectedGender = null,
-                    bodyFatGoalInput = "",
-                    photoPath = null,
-                    canSave = false,
-                    errorMessage = null,
-                    showCreateProfileButton = true
-                )
+            launch {
+                updateState {
+                    copy(
+                        isEditing = false,
+                        nameInput = "",
+                        ageInput = "",
+                        selectedGender = null,
+                        bodyFatGoalInput = "",
+                        photoPath = null,
+                        canSave = false,
+                        errorMessage = null,
+                        showCreateProfileButton = true
+                    )
+                }
             }
         }
     }
 
 
     fun onNameChanged(name: String) {
-        updateState {
-            copy(
-                nameInput = name,
-                isEditing = true,
-                profileSavedSuccessfully = false
-            ).let { validateInputsInternal(it) }
+        launch {
+            updateState {
+                copy(
+                    nameInput = name,
+                    isEditing = true,
+                    profileSavedSuccessfully = false
+                ).let { validateInputsInternal(it) }
+            }
         }
     }
 
     fun onAgeChanged(age: String) {
-        updateState {
-            copy(
-                ageInput = age.filter { char -> char.isDigit() },
-                isEditing = true,
-                profileSavedSuccessfully = false
-            ).let { validateInputsInternal(it) }
+        launch {
+            updateState {
+                copy(
+                    ageInput = age.filter { char -> char.isDigit() },
+                    isEditing = true,
+                    profileSavedSuccessfully = false
+                ).let { validateInputsInternal(it) }
+            }
         }
     }
 
     fun onGenderSelected(gender: Gender) {
-        updateState {
-            copy(
-                selectedGender = gender,
-                isEditing = true,
-                profileSavedSuccessfully = false
-            ).let { validateInputsInternal(it) }
+        launch {
+            updateState {
+                copy(
+                    selectedGender = gender,
+                    isEditing = true,
+                    profileSavedSuccessfully = false
+                ).let { validateInputsInternal(it) }
+            }
         }
     }
 
@@ -183,12 +203,14 @@ class ProfileViewModel @Inject constructor(
         } else {
             filteredGoal
         }
-        updateState {
-            copy(
-                bodyFatGoalInput = newGoal,
-                isEditing = true,
-                profileSavedSuccessfully = false
-            ).let { validateInputsInternal(it) }
+        launch {
+            updateState {
+                copy(
+                    bodyFatGoalInput = newGoal,
+                    isEditing = true,
+                    profileSavedSuccessfully = false
+                ).let { validateInputsInternal(it) }
+            }
         }
     }
 
@@ -247,22 +269,24 @@ class ProfileViewModel @Inject constructor(
 
     private fun validateInputsInternal(currentState: ProfileScreenUiState): ProfileScreenUiState {
         val nameIsValid = currentState.nameInput.isNotBlank()
-        val ageIsValid = currentState.ageInput.isNotBlank() && currentState.ageInput.toIntOrNull() != null && currentState.ageInput.toInt() > 0
+        val ageIsValid =
+            currentState.ageInput.isNotBlank() && currentState.ageInput.toIntOrNull() != null && currentState.ageInput.toInt() > 0
         val genderIsValid = currentState.selectedGender != null
         val bodyFatGoalIsValidOrEmpty = currentState.bodyFatGoalInput.isEmpty() ||
                 (currentState.bodyFatGoalInput.toDoubleOrNull() != null && currentState.bodyFatGoalInput.toDouble() > 0 && currentState.bodyFatGoalInput.toDouble() < 100)
 
 
         val originalProfile = currentState.userProfile
-        val changesMade = if (originalProfile == null) { 
+        val changesMade = if (originalProfile == null) {
             currentState.nameInput.isNotEmpty() || currentState.ageInput.isNotEmpty() ||
                     currentState.selectedGender != null || currentState.bodyFatGoalInput.isNotEmpty() ||
                     currentState.photoPath != null
-        } else { 
+        } else {
             currentState.nameInput != originalProfile.name ||
                     currentState.ageInput != originalProfile.age.toString() ||
                     currentState.selectedGender != originalProfile.gender ||
-                    (currentState.bodyFatGoalInput.toDoubleOrNull() ?: -1.0) != (originalProfile.bodyFatPercentGoal?.toDouble() ?: -1.0) || 
+                    (currentState.bodyFatGoalInput.toDoubleOrNull()
+                        ?: -1.0) != (originalProfile.bodyFatPercentGoal?.toDouble() ?: -1.0) ||
                     currentState.photoPath != originalProfile.photoPath
         }
 
@@ -273,20 +297,22 @@ class ProfileViewModel @Inject constructor(
     }
 
     fun onCreateProfileClicked() {
-        updateState {
-            copy(
-                isEditing = true,
-                userProfile = null, 
-                nameInput = "",
-                ageInput = "",
-                selectedGender = null,
-                bodyFatGoalInput = "",
-                photoPath = null,
-                canSave = false, 
-                showCreateProfileButton = false,
-                profileSavedSuccessfully = false,
-                errorMessage = null
-            ).let { validateInputsInternal(it) } 
+        launch {
+            updateState {
+                copy(
+                    isEditing = true,
+                    userProfile = null,
+                    nameInput = "",
+                    ageInput = "",
+                    selectedGender = null,
+                    bodyFatGoalInput = "",
+                    photoPath = null,
+                    canSave = false,
+                    showCreateProfileButton = false,
+                    profileSavedSuccessfully = false,
+                    errorMessage = null
+                ).let { validateInputsInternal(it) }
+            }
         }
     }
 
@@ -296,13 +322,13 @@ class ProfileViewModel @Inject constructor(
                 return@launch
             }
 
-            val currentValidatedState = state.value 
+            val currentValidatedState = state.value
             val ageToSave = currentValidatedState.ageInput.trim().toIntOrNull()
             val genderToSave = currentValidatedState.selectedGender
             val bodyFatGoalToSave: Double? = currentValidatedState.bodyFatGoalInput.trim().let {
                 if (it.isEmpty()) null else it.toDoubleOrNull()
             }
-            
+
             if (ageToSave == null || ageToSave <= 0) {
                 updateState { copy(errorMessage = "Invalid age entered.") }
                 return@launch
@@ -311,7 +337,7 @@ class ProfileViewModel @Inject constructor(
                 updateState { copy(errorMessage = "Please select a gender.") }
                 return@launch
             }
-            if (currentValidatedState.bodyFatGoalInput.isNotEmpty() && (bodyFatGoalToSave == null || bodyFatGoalToSave <=0 || bodyFatGoalToSave >=100)) {
+            if (currentValidatedState.bodyFatGoalInput.isNotEmpty() && (bodyFatGoalToSave == null || bodyFatGoalToSave <= 0 || bodyFatGoalToSave >= 100)) {
                 updateState { copy(errorMessage = "Invalid Body Fat Goal entered.") }
                 return@launch
             }
@@ -320,16 +346,16 @@ class ProfileViewModel @Inject constructor(
                 name = currentValidatedState.nameInput.trim(),
                 age = ageToSave,
                 gender = genderToSave,
-                bodyFatPercentGoal = bodyFatGoalToSave?.toInt(), 
+                bodyFatPercentGoal = bodyFatGoalToSave?.toInt(),
                 photoPath = currentValidatedState.photoPath
             )
 
             profileRepository.saveProfile(newProfile)
             updateState {
                 copy(
-                    userProfile = newProfile, 
+                    userProfile = newProfile,
                     isEditing = false,
-                    canSave = false, 
+                    canSave = false,
                     profileSavedSuccessfully = true,
                     errorMessage = null
                 )
@@ -338,30 +364,32 @@ class ProfileViewModel @Inject constructor(
     }
 
     fun dismissSuccessMessage() {
-        updateState { copy(profileSavedSuccessfully = false) }
+        launch {
+            updateState { copy(profileSavedSuccessfully = false) }
+        }
     }
 
     fun clearErrorMessage() {
-        updateState { copy(errorMessage = null) }
+        launch {
+            updateState { copy(errorMessage = null) }
+        }
     }
 
-    fun onPermissionDenied(message: String) { 
-        updateState { copy(errorMessage = message) }
+    fun onPermissionDenied(message: String) {
+        launch {
+            updateState { copy(errorMessage = message) }
+        }
     }
 
     fun onAboutAppClicked() {
-        updateState { copy(showAboutSheet = true) }
+        launch {
+            updateState { copy(showAboutSheet = true) }
+        }
     }
 
     fun onDismissAboutApp() {
-        updateState { copy(showAboutSheet = false) }
-    }
-
-    fun onPrivacyPolicyClicked() {
-        updateState { copy(showPrivacyPolicySheet = true) }
-    }
-
-    fun onDismissPrivacyPolicy() {
-        updateState { copy(showPrivacyPolicySheet = false) }
+        launch {
+            updateState { copy(showAboutSheet = false) }
+        }
     }
 }
