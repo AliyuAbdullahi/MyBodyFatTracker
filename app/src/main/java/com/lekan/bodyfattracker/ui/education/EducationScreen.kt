@@ -429,7 +429,11 @@ fun VideoListItem(
             .fillMaxWidth()
             .combinedClickable(
                 onClick = {
-                    onItemClick()
+                    if (isSelectionModeActive) {
+                        onVideoShortClickInSelection?.invoke()
+                    } else {
+                        onItemClick()
+                    }
                 },
                 onLongClick = {
                     if (isSuperUser && isCloudVideoItem) {

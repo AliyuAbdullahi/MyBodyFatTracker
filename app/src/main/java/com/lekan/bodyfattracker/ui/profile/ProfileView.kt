@@ -1,6 +1,8 @@
 package com.lekan.bodyfattracker.ui.profile
 
 import android.Manifest
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -94,7 +96,7 @@ fun ProfileScreen(
     onNavigateUp: (() -> Unit)? = null
 ) {
     val uiState by viewModel.state.collectAsState()
-    val context = LocalContext.current
+    val context = LocalContext.current // General context for Toasts etc.
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
@@ -202,6 +204,8 @@ fun ProfileScreen(
                 },
                 label = "ProfileContentAnimation"
             ) { currentTargetState ->
+                // Obtain LocalContext here as it's needed by the branches for the Intent
+                val intentContext = LocalContext.current
                 when (currentTargetState) {
                     ProfileContent.FORM -> {
                         ProfileForm(
@@ -229,7 +233,10 @@ fun ProfileScreen(
                             canSave = uiState.canSave,
                             isEditingOrCreating = uiState.isEditing || uiState.showCreateProfileButton,
                             onAboutAppClicked = viewModel::onAboutAppClicked,
-                            onPrivacyPolicyClicked = viewModel::onPrivacyPolicyClicked
+                            onPrivacyPolicyClicked = {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://aliyuabdullahi.github.io/MyBodyFatTracker/privacy_policy"))
+                                intentContext.startActivity(intent)
+                            }
                         )
                     }
 
@@ -243,7 +250,10 @@ fun ProfileScreen(
                                 bodyFatGoal = it.bodyFatPercentGoal?.toString() ?: "N/A",
                                 gender = it.gender,
                                 onAboutAppClicked = viewModel::onAboutAppClicked,
-                                onPrivacyPolicyClicked = viewModel::onPrivacyPolicyClicked
+                                onPrivacyPolicyClicked = {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://aliyuabdullahi.github.io/MyBodyFatTracker/privacy_policy"))
+                                    intentContext.startActivity(intent)
+                                }
                             )
                         } ?: Box(
                             modifier = Modifier.fillMaxSize(),
@@ -499,7 +509,7 @@ fun ProfileOverview(
     onAboutAppClicked: () -> Unit,
     onPrivacyPolicyClicked: () -> Unit
 ) {
-    val context = LocalContext.current
+    // val context = LocalContext.current // Not needed here if onPrivacyPolicyClicked handles context
     Column(
         modifier = modifier
             .fillMaxSize()
