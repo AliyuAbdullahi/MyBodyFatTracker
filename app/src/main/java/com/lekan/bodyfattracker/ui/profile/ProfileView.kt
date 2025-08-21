@@ -81,6 +81,7 @@ import coil3.request.crossfade
 import coil3.request.error
 import coil3.request.placeholder
 import com.lekan.bodyfattracker.R
+import com.lekan.bodyfattracker.ui.ads.AdmobBanner
 import com.lekan.bodyfattracker.ui.home.Gender
 import java.io.File
 
@@ -554,6 +555,7 @@ fun ProfileOverview(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 16.dp)
             )
+            AdmobBanner(modifier = Modifier.fillMaxWidth())
             Divider(modifier = Modifier.padding(horizontal = 16.dp))
 
             // Gender

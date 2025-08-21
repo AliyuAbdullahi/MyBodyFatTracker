@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -8,6 +10,15 @@ plugins {
     alias(libs.plugins.firebase.google.service)
     alias(libs.plugins.crashlytics)
 }
+
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties") // Or project.file("local.properties") if it's module-specific
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use { input ->
+        localProperties.load(input)
+    }
+}
+
 
 android {
     namespace = "com.lekan.bodyfattracker"
@@ -29,6 +40,40 @@ android {
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
+            )
+            buildConfigField(
+                "String",
+                "PROFILE_BANNER_AD_UNIT_ID",
+                "\"${localProperties.getProperty("ProfileBanner", "")}\""
+            )
+            buildConfigField(
+                "String",
+                "EDUCATION_BANNER_AD_UNIT_ID",
+                "\"${localProperties.getProperty("EducationBanner", "")}\""
+            )
+            buildConfigField(
+                "String",
+                "EDUCATION_INTERSTITIAL_AD_UNIT_ID", // Assuming you have one for interstitial
+                "\"${localProperties.getProperty("EducationInterstitialAdUnit", "")}\""
+            )
+        }
+
+        debug {
+            // You might want to use test IDs for debug builds by default
+            buildConfigField(
+                "String",
+                "PROFILE_BANNER_AD_UNIT_ID",
+                "\"ca-app-pub-3940256099942544/6300978111\"" // Google's test banner ID
+            )
+            buildConfigField(
+                "String",
+                "EDUCATION_BANNER_AD_UNIT_ID",
+                "\"ca-app-pub-3940256099942544/6300978111\""
+            )
+            buildConfigField(
+                "String",
+                "EDUCATION_INTERSTITIAL_AD_UNIT_ID",
+                "\"ca-app-pub-3940256099942544/1033173712\"" // Google's test interstitial ID
             )
         }
     }

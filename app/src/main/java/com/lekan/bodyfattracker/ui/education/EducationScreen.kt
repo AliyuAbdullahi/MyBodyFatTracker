@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.lekan.bodyfattracker.R
+import com.lekan.bodyfattracker.ui.ads.AdmobBanner
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -285,6 +286,8 @@ fun CloudVideosTabContent(
             },
             singleLine = true
         )
+
+        AdmobBanner(modifier = Modifier.fillMaxWidth())
 
         if (uiState.isLoadingCloud) {
             Column(

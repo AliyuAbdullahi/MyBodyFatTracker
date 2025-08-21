@@ -1,5 +1,6 @@
 package com.lekan.bodyfattracker.ui.education
 
+import android.app.Activity
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.activity.compose.BackHandler
@@ -23,6 +24,7 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import com.lekan.bodyfattracker.R
+import com.lekan.bodyfattracker.ui.ads.InterstitialAdManager
 
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener
@@ -90,7 +92,20 @@ fun YoutubePlayerScreen(
                     .build()
                 youtubePlayerView.initialize(object : AbstractYouTubePlayerListener() {
                     override fun onReady(youTubePlayer: YouTubePlayer) {
+                        InterstitialAdManager.loadAd(context)
                         youTubePlayer.loadVideo(videoId, 0f)
+                    }
+
+                    override fun onStateChange(
+                        youTubePlayer: YouTubePlayer,
+                        state: com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants.PlayerState
+                    ) {
+                        if (state == com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants.PlayerState.ENDED) {
+                            InterstitialAdManager.showAd(context as Activity, onAdDismissed = {
+
+                            }
+                            )
+                        }
                     }
                 }, true, iFramePlayerOptions) // true for handleFullScreen
 
