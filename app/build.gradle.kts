@@ -11,6 +11,18 @@ plugins {
     alias(libs.plugins.crashlytics)
 }
 
+// Read version properties
+val versionPropsFile = rootProject.file("app/version.properties") // Adjusted path to be relative to rootProject
+val versionProps = Properties()
+if (versionPropsFile.exists()) {
+    versionPropsFile.inputStream().use { versionProps.load(it) }
+} else {
+    throw GradleException("Could not read version.properties!")
+}
+
+val appVersionCode = versionProps.getProperty("versionCode", "1").toInt()
+val appVersionName = versionProps.getProperty("versionName", "1.0.0")
+
 val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
@@ -30,8 +42,8 @@ android {
         applicationId = "com.lekan.bodyfattracker"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -53,6 +65,11 @@ android {
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
+            )
+            buildConfigField(
+                "Boolean",
+                "IS_SUPER_USER",
+                localProperties.getProperty("IS_SUPER_USER", "false")
             )
             buildConfigField(
                 "String",
@@ -98,6 +115,11 @@ android {
                 "EDUCATION_INTERSTITIAL_AD_UNIT_ID",
                 "\"ca-app-pub-3940256099942544/1033173712\"" // Google's test interstitial ID
             )
+            buildConfigField(
+                "Boolean",
+                "IS_SUPER_USER",
+                localProperties.getProperty("IS_SUPER_USER", "true")
+            )
         }
     }
     compileOptions {
@@ -109,6 +131,58 @@ android {
     }
     buildFeatures {
         compose = true
+    }
+}
+
+// Define version increment tasks
+tasks.register("incrementPatch") {
+    group = "versioning"
+    description = "Increments the patch version and versionCode."
+    doLast {
+        val currentVersionCode = versionProps.getProperty("versionCode").toInt()
+        val currentVersionName = versionProps.getProperty("versionName")
+        val parts = currentVersionName.split(".").map { it.toInt() }.toMutableList()
+        parts[2] = parts[2] + 1 // Increment patch
+
+        versionProps.setProperty("versionCode", (currentVersionCode + 1).toString())
+        versionProps.setProperty("versionName", parts.joinToString("."))
+        versionPropsFile.outputStream().use { versionProps.store(it, null) }
+        println("Version updated to: ${parts.joinToString(".")} (Code: ${currentVersionCode + 1})")
+    }
+}
+
+tasks.register("incrementMinor") {
+    group = "versioning"
+    description = "Increments the minor version, resets patch to 0, and increments versionCode."
+    doLast {
+        val currentVersionCode = versionProps.getProperty("versionCode").toInt()
+        val currentVersionName = versionProps.getProperty("versionName")
+        val parts = currentVersionName.split(".").map { it.toInt() }.toMutableList()
+        parts[1] = parts[1] + 1 // Increment minor
+        parts[2] = 0             // Reset patch
+
+        versionProps.setProperty("versionCode", (currentVersionCode + 1).toString())
+        versionProps.setProperty("versionName", parts.joinToString("."))
+        versionPropsFile.outputStream().use { versionProps.store(it, null) }
+        println("Version updated to: ${parts.joinToString(".")} (Code: ${currentVersionCode + 1})")
+    }
+}
+
+tasks.register("incrementMajor") {
+    group = "versioning"
+    description = "Increments the major version, resets minor and patch to 0, and increments versionCode."
+    doLast {
+        val currentVersionCode = versionProps.getProperty("versionCode").toInt()
+        val currentVersionName = versionProps.getProperty("versionName")
+        val parts = currentVersionName.split(".").map { it.toInt() }.toMutableList()
+        parts[0] = parts[0] + 1 // Increment major
+        parts[1] = 0             // Reset minor
+        parts[2] = 0             // Reset patch
+
+        versionProps.setProperty("versionCode", (currentVersionCode + 1).toString())
+        versionProps.setProperty("versionName", parts.joinToString("."))
+        versionPropsFile.outputStream().use { versionProps.store(it, null) }
+        println("Version updated to: ${parts.joinToString(".")} (Code: ${currentVersionCode + 1})")
     }
 }
 

@@ -12,6 +12,7 @@ import android.util.Log
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.geometry.isEmpty
 import androidx.lifecycle.viewModelScope
+import com.lekan.bodyfattracker.BuildConfig
 import com.lekan.bodyfattracker.data.EducationRepository
 import com.lekan.bodyfattracker.ui.core.CoreViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -37,7 +38,7 @@ data class EducationUiState(
     val error: String? = null,
 
     // SuperUser Feature States
-    val isSuperUser: Boolean = true, // Placeholder
+    val isSuperUser: Boolean = BuildConfig.IS_SUPER_USER, // Placeholder
     val showAddVideoDialog: Boolean = false,
     val newVideoTitle: String = "",
     val newVideoUrl: String = "",

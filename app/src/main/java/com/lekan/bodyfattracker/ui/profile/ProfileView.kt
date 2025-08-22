@@ -73,6 +73,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -430,18 +431,20 @@ fun ProfileForm(
             AsyncImage(
                 model = uiState.photoPath,
                 contentDescription = stringResource(R.string.profile_picture_content_description),
+                error = painterResource(R.drawable.camera_image),
+                placeholder = painterResource(R.drawable.camera_image),
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
-            Icon(
-                imageVector = Icons.Rounded.PhotoCamera,
-                contentDescription = stringResource(R.string.select_photo_content_description),
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(8.dp)
-                    .size(24.dp),
-                tint = MaterialTheme.colorScheme.onSecondaryContainer
-            )
+//            Icon(
+//                imageVector = Icons.Rounded.PhotoCamera,
+//                contentDescription = stringResource(R.string.select_photo_content_description),
+//                modifier = Modifier
+//                    .align(Alignment.BottomEnd)
+//                    .padding(8.dp)
+//                    .size(24.dp),
+//                tint = MaterialTheme.colorScheme.onSecondaryContainer
+//            )
         }
         Spacer(modifier = Modifier.height(16.dp))
 

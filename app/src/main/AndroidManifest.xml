@@ -13,9 +13,6 @@
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
 
-    <!-- ... other permissions ... -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
-
     <uses-permission android:name="android.permission.INTERNET" />
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" /> <!-- For exact alarms, if using them. Check API level requirements -->

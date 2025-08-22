@@ -41,7 +41,7 @@ data class ProfileScreenUiState(
     val showAboutSheet: Boolean = false,
     val showPrivacyPolicySheet: Boolean = false,
     val selectedDisplayWeightUnit: WeightUnit = WeightUnit.KG,
-    val isSuperUser: Boolean = true, // Added for testing feedback viewing
+    val isSuperUser: Boolean = BuildConfig.IS_SUPER_USER, // Added for testing feedback viewing
     val showFeedbackDialog: Boolean = false,
     val feedbackDialogText: String = "",
     val isSendingFeedback: Boolean = false,
