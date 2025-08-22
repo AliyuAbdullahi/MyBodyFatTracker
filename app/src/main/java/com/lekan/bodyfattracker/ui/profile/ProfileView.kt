@@ -1,41 +1,42 @@
 package com.lekan.bodyfattracker.ui.profile
 
-import android.Manifest
-import android.content.Intent
+import android.content.res.Configuration
 import android.net.Uri
-import android.os.Build
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Feedback
+import androidx.compose.material.icons.outlined.GppGood
+import androidx.compose.material.icons.rounded.MonitorWeight
+import androidx.compose.material.icons.rounded.PhotoCamera
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
@@ -43,18 +44,19 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.FabPosition
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -67,241 +69,294 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
-import coil3.compose.rememberAsyncImagePainter
-import coil3.request.ImageRequest
-import coil3.request.crossfade
-import coil3.request.error
-import coil3.request.placeholder
-import com.lekan.bodyfattracker.BuildConfig.PROFILE_BANNER_AD_UNIT_ID
+import com.lekan.bodyfattracker.BuildConfig
 import com.lekan.bodyfattracker.R
+import com.lekan.bodyfattracker.model.UserProfile
+import com.lekan.bodyfattracker.model.WeightUnit
 import com.lekan.bodyfattracker.ui.ads.AdmobBanner
 import com.lekan.bodyfattracker.ui.home.Gender
-import com.lekan.bodyfattracker.ui.home.formatLocally
-import java.io.File
+import com.lekan.bodyfattracker.ui.profile.components.FeedbackDialog
+import com.lekan.bodyfattracker.ui.theme.BodyFatTrackerTheme
 
-// Define this enum at the top level of the file or inside a relevant scope
-private enum class ProfileContent {
-    OVERVIEW, FORM, EMPTY_FALLBACK
+enum class ProfileContent {
+    OVERVIEW, FORM
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
+const val AboutPageUri = "https://aliyuabdullahi.github.io/MyBodyFatTracker/privacy_policy"
+
+
+private fun showToast(context: android.content.Context, message: String) {
+    android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT).show()
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    viewModel: ProfileViewModel = hiltViewModel(),
-    onNavigateUp: (() -> Unit)? = null
+    viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.state.collectAsState()
-    val context = LocalContext.current // General context for Toasts etc.
-
-    val photoPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent(),
-        onResult = { uri ->
-            uri?.let { viewModel.onPhotoSelected(it, context.applicationContext) }
-        }
-    )
-
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-        onResult = { isGranted ->
-            if (isGranted) {
-                photoPickerLauncher.launch("image/*")
-            } else {
-                viewModel.onPermissionDenied("Storage permission is required to select a photo.")
-            }
-        }
-    )
+    var currentTargetState by remember { mutableStateOf(ProfileContent.OVERVIEW) }
+    val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
 
     LaunchedEffect(uiState.profileSavedSuccessfully) {
         if (uiState.profileSavedSuccessfully) {
-            Toast.makeText(context, "Profile Saved!", Toast.LENGTH_SHORT).show()
+            showToast(context, context.getString(R.string.profile_saved_successfully))
             viewModel.dismissSuccessMessage()
+            currentTargetState = ProfileContent.OVERVIEW
         }
     }
 
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let {
-            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+            showToast(context, it)
             viewModel.clearErrorMessage()
+        }
+    }
+
+    LaunchedEffect(uiState.feedbackSentMessage) {
+        uiState.feedbackSentMessage?.let { message ->
+            showToast(context, message)
+            viewModel.clearFeedbackMessage()
         }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(id = R.string.profile_title)) },
-                navigationIcon = {
-                    if (onNavigateUp != null) {
-                        IconButton(onClick = onNavigateUp) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                title = { Text(stringResource(id = R.string.profile_destination)) },
+                actions = {
+                    if (currentTargetState == ProfileContent.OVERVIEW && uiState.userProfile != null) {
+                        IconButton(onClick = {
+                            viewModel.onEditProfile()
+                            currentTargetState = ProfileContent.FORM
+                        }) {
+                            Icon(
+                                Icons.Outlined.Edit,
+                                contentDescription = stringResource(R.string.edit_profile_content_description)
+                            )
                         }
-                    }
-                }
-            )
-        },
-        floatingActionButton = {
-            if (!uiState.isEditing && !uiState.showCreateProfileButton && uiState.userProfile != null) {
-                FloatingActionButton(onClick = viewModel::onEditProfile) {
-                    Icon(
-                        Icons.Filled.Edit,
-                        contentDescription = stringResource(R.string.edit_profile_button)
-                    )
-                }
-            }
-        },
-        floatingActionButtonPosition = FabPosition.End
-    ) { paddingValues ->
-
-        if (uiState.isLoading && uiState.userProfile?.name?.isNotBlank()
-                ?.let { !it } == true && !uiState.isEditing && !uiState.showCreateProfileButton
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues), contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        } else {
-            val targetContentState = when {
-                uiState.isEditing || uiState.showCreateProfileButton -> ProfileContent.FORM
-                uiState.userProfile != null -> ProfileContent.OVERVIEW
-                else -> ProfileContent.EMPTY_FALLBACK
-            }
-
-            AnimatedContent(
-                targetState = targetContentState,
-                modifier = Modifier
-                    .padding(paddingValues)
-                    .fillMaxSize(), // Apply padding here
-                transitionSpec = {
-                    if (targetState == ProfileContent.FORM && initialState == ProfileContent.OVERVIEW) {
-                        slideInHorizontally { fullWidth -> fullWidth } + fadeIn(
-                            animationSpec = tween(
-                                300
-                            )
-                        ) togetherWith
-                                slideOutHorizontally { fullWidth -> -fullWidth } + fadeOut(
-                            animationSpec = tween(300)
-                        )
-                    } else if (targetState == ProfileContent.OVERVIEW && initialState == ProfileContent.FORM) {
-                        slideInHorizontally { fullWidth -> -fullWidth } + fadeIn(
-                            animationSpec = tween(
-                                300
-                            )
-                        ) togetherWith
-                                slideOutHorizontally { fullWidth -> fullWidth } + fadeOut(
-                            animationSpec = tween(300)
-                        )
-                    } else {
-                        fadeIn(animationSpec = tween(220, delayMillis = 90)) togetherWith
-                                fadeOut(animationSpec = tween(90))
                     }
                 },
-                label = "ProfileContentAnimation"
-            ) { currentTargetState ->
-                // Obtain LocalContext here as it's needed by the branches for the Intent
-                val intentContext = LocalContext.current
-                when (currentTargetState) {
-                    ProfileContent.FORM -> {
-                        ProfileForm(
-                            modifier = Modifier.fillMaxSize(), // Let ProfileForm fill AnimatedContent
-                            name = uiState.nameInput,
-                            age = uiState.ageInput,
-                            bodyFatGoalInput = uiState.bodyFatGoalInput,
-                            selectedGender = uiState.selectedGender,
-                            photoPath = uiState.photoPath,
-                            onNameChange = viewModel::onNameChanged,
-                            onAgeChange = viewModel::onAgeChanged,
-                            onBodyFatGoalChange = viewModel::onBodyFatGoalChanged,
-                            onGenderSelect = viewModel::onGenderSelected,
-                            onPhotoPickerClick = {
-                                val permission =
-                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                        Manifest.permission.READ_MEDIA_IMAGES
-                                    } else {
-                                        Manifest.permission.READ_EXTERNAL_STORAGE
-                                    }
-                                permissionLauncher.launch(permission)
-                            },
-                            onSaveClicked = viewModel::saveProfile,
-                            onCancelEditClicked = viewModel::cancelEditProfile,
-                            canSave = uiState.canSave,
-                            isEditingOrCreating = uiState.isEditing || uiState.showCreateProfileButton,
-                            onAboutAppClicked = viewModel::onAboutAppClicked,
-                            onPrivacyPolicyClicked = {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://aliyuabdullahi.github.io/MyBodyFatTracker/privacy_policy"))
-                                intentContext.startActivity(intent)
-                            }
-                        )
-                    }
-
-                    ProfileContent.OVERVIEW -> {
-                        uiState.userProfile?.let { // Ensure userProfile is not null
-                            ProfileOverview(
-                                modifier = Modifier.fillMaxSize(), // Let ProfileOverview fill AnimatedContent
-                                name = it.name,
-                                age = it.age.toString(),
-                                photoPath = it.photoPath,
-                                bodyFatGoal = it.bodyFatPercentGoal?.toString() ?: "N/A",
-                                gender = it.gender,
-                                onAboutAppClicked = viewModel::onAboutAppClicked,
-                                onPrivacyPolicyClicked = {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://aliyuabdullahi.github.io/MyBodyFatTracker/privacy_policy"))
-                                    intentContext.startActivity(intent)
-                                }
-                            )
-                        } ?: Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) { // Fallback if userProfile somehow null
-                            Text("Profile data is unavailable.")
-                            Button(onClick = viewModel::onCreateProfileClicked) {
-                                Text("Create Profile")
-                            }
-                        }
-                    }
-
-                    ProfileContent.EMPTY_FALLBACK -> {
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                ),
+                windowInsets = WindowInsets(0, 0, 0, 0)
+            )
+        },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+    ) { paddingValues ->
+        AnimatedContent(
+            targetState = currentTargetState,
+            modifier = Modifier.padding(paddingValues),
+            transitionSpec = {
+                if (targetState == ProfileContent.FORM && initialState == ProfileContent.OVERVIEW) {
+                    slideInHorizontally { width -> width } + fadeIn() togetherWith
+                            slideOutHorizontally { width -> -width } + fadeOut()
+                } else {
+                    slideInHorizontally { width -> -width } + fadeIn() togetherWith
+                            slideOutHorizontally { width -> width } + fadeOut()
+                }
+            }, label = "ProfileScreenAnimation"
+        ) { targetState ->
+            when (targetState) {
+                ProfileContent.OVERVIEW -> {
+                    if (uiState.isLoading) {
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
-                            if (uiState.isLoading) { // Show loading specifically for this case
-                                CircularProgressIndicator()
-                            } else {
-                                Text(
-                                    "No profile found. Create one to get started!",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    modifier = Modifier.padding(16.dp)
-                                )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Button(onClick = viewModel::onCreateProfileClicked) {
-                                    Text("Create Profile")
-                                }
+                            CircularProgressIndicator()
+                        }
+                    } else if (uiState.userProfile == null) {
+                        // Show a prompt to create a profile if it doesn't exist
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = stringResource(R.string.no_profile_found),
+                                style = MaterialTheme.typography.headlineSmall,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(onClick = {
+                                viewModel.onCreateProfileClicked()
+                                currentTargetState = ProfileContent.FORM
+                            }) {
+                                Text(stringResource(R.string.create_profile_button))
                             }
                         }
+                    } else {
+                        ProfileOverview(
+                            userProfile = uiState.userProfile!!, // Safe as we checked for null
+                            onShowAboutSheet =  {
+                                viewModel.onAboutAppClicked()
+                            },
+                            onShowPrivacySheet = {
+                                uriHandler.openUri(AboutPageUri)
+                            },
+                            onLeaveFeedbackClicked = viewModel::onLeaveFeedbackClicked,
+                            selectedDisplayWeightUnit = uiState.selectedDisplayWeightUnit,
+                            onWeightUnitSelected = viewModel::updateDisplayWeightUnit,
+                            isSuperUser = uiState.isSuperUser
+                        )
                     }
                 }
+
+                ProfileContent.FORM -> {
+                    val context = LocalContext.current
+                    ProfileForm(
+                        uiState = uiState,
+                        onNameChange = viewModel::onNameChanged,
+                        onAgeChange = viewModel::onAgeChanged,
+                        onGenderSelected = viewModel::onGenderSelected,
+                        onBodyFatGoalChange = viewModel::onBodyFatGoalChanged,
+                        onPhotoSelected = { uri ->
+                            viewModel.onPhotoSelected(
+                                uri, context, failedToSaveProfileMessage = context.getString(
+                                    R.string.photo_saving_failed
+                                )
+                            )
+                        },
+                        onSaveClicked = {
+                            viewModel.saveProfile(
+                                invalidAgeMessage = context.getString(R.string.invalid_age),
+                                selectAGenderMessage = "Select Gender",
+                                invalidBodyFatGoalMessage = "Invalid Body Fat Goal",
+                            )
+                        },
+                        onCancelEditClicked = {
+                            viewModel.cancelEditProfile()
+                            currentTargetState = ProfileContent.OVERVIEW
+                        },
+                        onShowAboutSheet = {
+                            viewModel.onAboutAppClicked()
+                        },
+                        onShowPrivacySheet = {
+                            uriHandler.openUri(AboutPageUri)
+                        },
+                        onLeaveFeedbackClicked = viewModel::onLeaveFeedbackClicked,
+                    )
+                }
             }
+            if (uiState.showAboutSheet) {
+                AboutAppBottomSheet(
+                    onDismiss = {
+                        viewModel.onDismissAboutApp()
+                    }
+                )
+            }
+
+            if (uiState.showFeedbackDialog) {
+                FeedbackDialog(
+                    showDialog = uiState.showFeedbackDialog,
+                    feedbackText = uiState.feedbackDialogText,
+                    onFeedbackTextChanged = {
+                        viewModel.onFeedbackDialogTextChanged(it)
+                    },
+                    onDismissRequest = {
+                        viewModel.onDismissFeedbackDialog()
+                    },
+                    onSendFeedback = {
+                        viewModel.sendFeedback(
+                            feedbackEmptyMessage = context.getString(R.string.feedback_is_empty),
+                            feedbackSentMessage = context.getString(R.string.feedback_sent_successfully),
+                            failedToSendMessage = context.getString(R.string.failed_to_send_feedback)
+                        )
+                    },
+                    isSending = uiState.isSendingFeedback
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ProfileOverview(
+    userProfile: UserProfile,
+    onShowAboutSheet: () -> Unit,
+    onShowPrivacySheet: () -> Unit,
+    onLeaveFeedbackClicked: () -> Unit,
+    selectedDisplayWeightUnit: WeightUnit,
+    onWeightUnitSelected: (WeightUnit) -> Unit,
+    isSuperUser: Boolean
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        AsyncImage(
+            model = userProfile.photoPath,
+            contentDescription = stringResource(R.string.profile_picture_content_description),
+            modifier = Modifier
+                .size(120.dp)
+                .clip(CircleShape),
+            contentScale = ContentScale.Crop
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(userProfile.name, style = MaterialTheme.typography.headlineMedium)
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            stringResource(R.string.age_display_format, "${userProfile.age}"),
+            style = MaterialTheme.typography.bodyLarge
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            stringResource(R.string.gender_display_format, userProfile.gender.name),
+            style = MaterialTheme.typography.bodyLarge
+        )
+        userProfile.bodyFatPercentGoal?.let {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                stringResource(R.string.body_fat_goal_display_format, "$it"),
+                style = MaterialTheme.typography.bodyLarge
+            )
         }
 
-        if (uiState.showAboutSheet) {
-            val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-            ModalBottomSheet(
-                onDismissRequest = viewModel::onDismissAboutApp,
-                sheetState = sheetState
-            ) {
-                AboutAppBottomSheet(onDismiss = viewModel::onDismissAboutApp)
-            }
-        }
+        Spacer(modifier = Modifier.height(24.dp))
+//        Divider()
+//
+//        DisplayWeightUnitSelection(
+//            selectedUnit = selectedDisplayWeightUnit,
+//            onUnitSelected = onWeightUnitSelected
+//        )
+        Divider()
+
+        ListItem(
+            headlineContent = { Text(stringResource(R.string.profile_about_app_link)) },
+            leadingContent = { Icon(Icons.AutoMirrored.Outlined.HelpOutline, null) },
+            modifier = Modifier.clickable(onClick = onShowAboutSheet)
+        )
+        Divider()
+        ListItem(
+            headlineContent = { Text(stringResource(R.string.privacy_policy_title)) },
+            leadingContent = { Icon(Icons.Outlined.GppGood, null) },
+            modifier = Modifier.clickable(onClick = onShowPrivacySheet)
+        )
+        Divider()
+        ListItem(
+            headlineContent = { Text(stringResource(R.string.leave_feedback_label)) },
+            leadingContent = { Icon(Icons.Outlined.Feedback, null) },
+            modifier = Modifier.clickable(onClick = onLeaveFeedbackClicked)
+        )
+        Divider()
+        // Add more ListItems for other settings if needed
     }
 }
 
@@ -309,297 +364,339 @@ fun ProfileScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileForm(
-    modifier: Modifier = Modifier,
-    name: String,
-    age: String,
-    bodyFatGoalInput: String,
-    selectedGender: Gender?,
-    photoPath: String?,
+    uiState: ProfileScreenUiState,
     onNameChange: (String) -> Unit,
     onAgeChange: (String) -> Unit,
+    onGenderSelected: (Gender) -> Unit,
     onBodyFatGoalChange: (String) -> Unit,
-    onGenderSelect: (Gender) -> Unit,
-    onPhotoPickerClick: () -> Unit,
+    onPhotoSelected: (Uri?) -> Unit,
     onSaveClicked: () -> Unit,
     onCancelEditClicked: () -> Unit,
-    canSave: Boolean,
-    isEditingOrCreating: Boolean,
-    onAboutAppClicked: () -> Unit,
-    onPrivacyPolicyClicked: () -> Unit
+    onShowAboutSheet: () -> Unit,
+    onShowPrivacySheet: () -> Unit,
+    onLeaveFeedbackClicked: () -> Unit,
 ) {
+    val context = LocalContext.current
+    val singlePhotoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri -> onPhotoSelected(uri) }
+    )
+
     Column(
-        modifier = modifier // Use the modifier passed from AnimatedContent
-            .padding(horizontal = 16.dp, vertical = 16.dp)
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        val context = LocalContext.current
-        Text(
-            text = if (isEditingOrCreating && name.isBlank() && age.isBlank()) stringResource(R.string.create_profile_label)
-            else stringResource(R.string.edit_profile_label),
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-
         Box(
             modifier = Modifier
                 .size(120.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                .clickable { onPhotoPickerClick() },
-            contentAlignment = Alignment.Center
-        ) {
-            if (photoPath != null) {
-                val imageRequest = remember(photoPath) {
-                    ImageRequest.Builder(context)
-                        .data(File(photoPath))
-                        .crossfade(true)
-                        .placeholder(R.drawable.camera_image)
-                        .error(R.drawable.camera_image)
-                        .build()
-                }
-                Image(
-                    painter = rememberAsyncImagePainter(model = imageRequest),
-                    contentDescription = stringResource(R.string.add_profile_photo_desc),
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-            } else {
-                Icon(
-                    painter = painterResource(R.drawable.camera_image),
-                    contentDescription = stringResource(R.string.add_profile_photo_desc),
-                    modifier = Modifier.size(48.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(24.dp))
-
-        OutlinedTextField(
-            value = name,
-            onValueChange = onNameChange,
-            label = { Text(stringResource(R.string.name_label)) },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(
-                capitalization = KeyboardCapitalization.Words,
-                imeAction = ImeAction.Next
+                .background(MaterialTheme.colorScheme.secondaryContainer)
+                .clickable {
+                    singlePhotoPickerLauncher.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    )
+                }) {
+            AsyncImage(
+                model = uiState.photoPath,
+                contentDescription = stringResource(R.string.profile_picture_content_description),
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
             )
-        )
+            Icon(
+                imageVector = Icons.Rounded.PhotoCamera,
+                contentDescription = stringResource(R.string.select_photo_content_description),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(8.dp)
+                    .size(24.dp),
+                tint = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        }
         Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedTextField(
-            value = age,
+            value = uiState.nameInput,
+            onValueChange = onNameChange,
+            label = { Text(stringResource(R.string.name_label)) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedTextField(
+            value = uiState.ageInput,
             onValueChange = onAgeChange,
             label = { Text(stringResource(R.string.age_label)) },
-            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Number,
                 imeAction = ImeAction.Next
             ),
-            singleLine = true
+            modifier = Modifier.fillMaxWidth()
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-        var genderDropdownExpanded by remember { mutableStateOf(false) }
+        var expanded by remember { mutableStateOf(false) }
         ExposedDropdownMenuBox(
-            expanded = genderDropdownExpanded,
-            onExpandedChange = { genderDropdownExpanded = it },
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded },
             modifier = Modifier.fillMaxWidth()
         ) {
             OutlinedTextField(
-                value = selectedGender?.name
-                    ?: "Select Gender", // Ensure Gender enum has displayName
-                onValueChange = {},
-                label = { Text("Gender") },
+                value = uiState.selectedGender?.name
+                    ?: stringResource(R.string.select_gender_placeholder),
+                onValueChange = { },
                 readOnly = true,
-                trailingIcon = {
-                    IconButton(onClick = { genderDropdownExpanded = !genderDropdownExpanded }) {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = genderDropdownExpanded)
-                    }
-                },
+                label = { Text(stringResource(R.string.gender_label)) },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 modifier = Modifier
                     .menuAnchor()
                     .fillMaxWidth()
             )
             ExposedDropdownMenu(
-                expanded = genderDropdownExpanded,
-                onDismissRequest = { genderDropdownExpanded = false }
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
             ) {
-                Gender.entries.forEach { gender -> // Ensure Gender.entries exists
+                Gender.entries.forEach { gender ->
                     DropdownMenuItem(
-                        text = { Text(gender.name) }, // Ensure Gender enum has displayName
+                        text = { Text(gender.name) },
                         onClick = {
-                            onGenderSelect(gender)
-                            genderDropdownExpanded = false
+                            onGenderSelected(gender)
+                            expanded = false
                         }
                     )
                 }
             }
         }
-        Spacer(modifier = Modifier.height(16.dp))
-
+        Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
-            value = bodyFatGoalInput,
+            value = uiState.bodyFatGoalInput,
             onValueChange = onBodyFatGoalChange,
-            label = { Text(stringResource(R.string.body_fat_goal_optional_label)) }, // Ensure this string exists
-            modifier = Modifier.fillMaxWidth(),
+            label = { Text(stringResource(R.string.body_fat_goal_optional_label)) },
+            singleLine = true,
             keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Number,
+                keyboardType = KeyboardType.Decimal,
                 imeAction = ImeAction.Done
             ),
-            singleLine = true
+            modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(24.dp))
 
-        if (isEditingOrCreating) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End, // Or Arrangement.SpaceBetween, or use Spacers
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                TextButton(onClick = onCancelEditClicked) {
-                    Text("Cancel")
-                }
-                Spacer(modifier = Modifier.weight(1f)) // Pushes save to the end if Arrangement.End is not enough
-                Button(
-                    onClick = onSaveClicked,
-                    enabled = canSave
-                ) {
-                    Text(stringResource(R.string.save_button)) // Ensure this string exists
-                }
-            }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            OutlinedButton(
+                onClick = onCancelEditClicked,
+                modifier = Modifier.weight(1f)
+            ) { Text(stringResource(R.string.cancel_button)) }
+            Spacer(modifier = Modifier.width(16.dp))
+            Button(
+                onClick = onSaveClicked,
+                enabled = uiState.canSave,
+                modifier = Modifier.weight(1f)
+            ) { Text(stringResource(R.string.save_button)) }
         }
 
-        Spacer(modifier = Modifier.height(24.dp)) // Added space before About/Privacy for clarity
+        Spacer(modifier = Modifier.height(24.dp))
+//        Divider()
 
-        TextButton(
-            onClick = onAboutAppClicked,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("About App")
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        TextButton(
-            onClick = onPrivacyPolicyClicked,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Privacy Policy")
-        }
+//        DisplayWeightUnitSelection(
+//            selectedUnit = selectedDisplayWeightUnit,
+//            onUnitSelected = onWeightUnitSelected
+//        )
+//        Divider()
+//
+//        ListItem(
+//            headlineContent = { Text(stringResource(R.string.notifications_label)) },
+//            leadingContent = { Icon(Icons.Outlined.Notifications, null) },
+//            modifier = Modifier.clickable { /* TODO: Navigate to notification settings */ }
+//        )
+        Divider()
+        ListItem(
+            headlineContent = { Text(stringResource(R.string.profile_about_app_link)) },
+            leadingContent = { Icon(Icons.AutoMirrored.Outlined.HelpOutline, null) },
+            modifier = Modifier.clickable(onClick = onShowAboutSheet)
+        )
+        Divider()
+        ListItem(
+            headlineContent = { Text(stringResource(R.string.privacy_policy_title)) },
+            leadingContent = { Icon(Icons.Outlined.GppGood, null) },
+            modifier = Modifier.clickable(onClick = onShowPrivacySheet)
+        )
+        Divider()
+        ListItem(
+            headlineContent = { Text(stringResource(R.string.leave_feedback_label)) },
+            leadingContent = { Icon(Icons.Outlined.Feedback, null) },
+            modifier = Modifier.clickable(onClick = onLeaveFeedbackClicked)
+        )
+        Divider()
+
+        // AdMob Banner Placeholder - Assuming you have AdView composable
+        // com.google.android.gms.ads.AdView
+        // For now, a simple placeholder
+        Spacer(modifier = Modifier.height(16.dp))
+        AdmobBanner(modifier = Modifier.fillMaxWidth(), adUnitId = BuildConfig.PROFILE_BANNER_AD_UNIT_ID)
         Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileOverview(
-    modifier: Modifier = Modifier,
-    name: String,
-    age: String,
-    photoPath: String?,
-    bodyFatGoal: String,
-    gender: Gender,
-    onAboutAppClicked: () -> Unit,
-    onPrivacyPolicyClicked: () -> Unit
+fun DisplayWeightUnitSelection(
+    selectedUnit: WeightUnit,
+    onUnitSelected: (WeightUnit) -> Unit
 ) {
-    // val context = LocalContext.current // Not needed here if onPrivacyPolicyClicked handles context
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp), // Overall padding for the content
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // Centered Profile Image
-        Box(
-            modifier = Modifier
-                .size(120.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant) // Placeholder background
-                .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape) // Optional border
-        ) {
-            AsyncImage(
-                model = photoPath,
-                contentDescription = stringResource(R.string.profile_picture_description), // Accessibility
-                contentScale = ContentScale.Crop,
-                placeholder = painterResource(R.drawable.camera_image), // Placeholder image
-                error = painterResource(R.drawable.camera_image), // Error image
-                modifier = Modifier.fillMaxSize()
-            )
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Centered Title (User's Name)
+    Column(modifier = Modifier.padding(vertical = 8.dp)) {
         Text(
-            text = name, // User's name as the main title below the image
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(vertical = 16.dp)
+            text = stringResource(R.string.display_weight_in_label),
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+        SingleChoiceSegmentedButtonRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+        ) {
+            WeightUnit.entries.forEach { unit ->
+                SegmentedButton(
+                    selected = unit == selectedUnit,
+                    onClick = { onUnitSelected(unit) },
+                    shape = SegmentedButtonDefaults.itemShape(
+                        index = unit.ordinal,
+                        count = WeightUnit.entries.size
+                    ),
+                    icon = {
+                        SegmentedButtonDefaults.Icon(
+                            active = unit == selectedUnit,
+                            activeContent = {
+                                Icon(
+                                    Icons.Rounded.MonitorWeight,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SegmentedButtonDefaults.IconSize)
+                                )
+                            },
+                            inactiveContent = {
+                                Icon(
+                                    Icons.Rounded.MonitorWeight,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SegmentedButtonDefaults.IconSize)
+                                )
+                            }
+                        )
+                    }
+                ) {
+                    Text(unit.name)
+                }
+            }
+        }
+    }
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true, name = "Profile Screen Overview Light")
+@Preview(
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+    name = "Profile Screen Overview Dark"
+)
+@Composable
+fun ProfileScreenPreviewOverview() {
+    BodyFatTrackerTheme {
+        val previewUserProfile = UserProfile(
+            name = "Jane Doe",
+            age = 30,
+            gender = Gender.FEMALE,
+            bodyFatPercentGoal = 20,
+            photoPath = null // Or a drawable resource
+        )
+        val uiState = ProfileScreenUiState(
+            isLoading = false,
+            userProfile = previewUserProfile,
+            isSuperUser = true
         )
 
-        // --- Left-aligned informational items ---
-        Column(modifier = Modifier.fillMaxWidth()) {
-
-            // Age
-            Text(
-                text = stringResource(R.string.profile_age_display, age), // Example: "Age: 30"
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 16.dp)
-            )
-            AdmobBanner(modifier = Modifier.fillMaxWidth(), adUnitId = PROFILE_BANNER_AD_UNIT_ID)
-            Divider(modifier = Modifier.padding(horizontal = 16.dp))
-
-            // Gender
-            Text(
-                text = stringResource(
-                    R.string.profile_gender_display,
-                    gender.formatLocally(LocalContext.current)), // Example: "Gender: Male"
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 16.dp)
-            )
-            Divider(modifier = Modifier.padding(horizontal = 16.dp))
-
-            // Body Fat Goal
-            Text(
-                text = stringResource(
-                    R.string.profile_body_fat_goal_display,
-                    bodyFatGoal
-                ), // Example: "Body Fat Goal: 15%"
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 16.dp)
-            )
-            Divider(modifier = Modifier.padding(horizontal = 16.dp))
-
-            // About App
-            Text(
-                text = stringResource(R.string.profile_about_app_link), // Example: "About App"
-                style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.primary),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onAboutAppClicked)
-                    .padding(
-                        horizontal = 16.dp,
-                        vertical = 12.dp
-                    ) // Slightly more padding for clickable items
-            )
-            Divider(modifier = Modifier.padding(horizontal = 16.dp))
-
-            // Privacy Policy
-            Text(
-                text = stringResource(R.string.profile_privacy_policy_link), // Example: "Privacy Policy"
-                style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.primary),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onPrivacyPolicyClicked)
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
-            )
-            // No divider after the last item for a cleaner look
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Profile") },
+                    navigationIcon = {
+                        IconButton(onClick = { }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = {}) { Icon(Icons.Outlined.Edit, "Edit") }
+                    }
+                )
+            }
+        ) { padding ->
+            Column(modifier = Modifier.padding(padding)) {
+                ProfileOverview(
+                    userProfile = uiState.userProfile!!,
+                    onShowAboutSheet = { },
+                    onShowPrivacySheet = { },
+                    onLeaveFeedbackClicked = {},
+                    selectedDisplayWeightUnit = WeightUnit.KG,
+                    onWeightUnitSelected = {},
+                    isSuperUser = uiState.isSuperUser
+                )
+            }
         }
-        Spacer(modifier = Modifier.height(16.dp)) // Spacer at the bottom for scroll padding
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true, name = "Profile Screen Form Light")
+@Preview(
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+    name = "Profile Screen Form Dark"
+)
+@Composable
+fun ProfileScreenPreviewForm() {
+    BodyFatTrackerTheme {
+        val uiState = ProfileScreenUiState(
+            isLoading = false,
+            userProfile = null,
+            isEditing = true,
+            nameInput = "John Doe",
+            ageInput = "25",
+            selectedGender = Gender.MALE,
+            canSave = true,
+            isSuperUser = true
+        )
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Edit Profile") },
+                    navigationIcon = {
+                        IconButton(onClick = { }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        }
+                    }
+                )
+            }
+        ) { padding ->
+            Column(modifier = Modifier.padding(padding)) {
+                ProfileForm(
+                    uiState = uiState,
+                    onNameChange = {},
+                    onAgeChange = {},
+                    onGenderSelected = {},
+                    onBodyFatGoalChange = {},
+                    onPhotoSelected = {},
+                    onSaveClicked = {},
+                    onCancelEditClicked = {},
+                    onShowAboutSheet = {},
+                    onShowPrivacySheet = {},
+                    onLeaveFeedbackClicked = {},
+                )
+            }
+        }
     }
 }

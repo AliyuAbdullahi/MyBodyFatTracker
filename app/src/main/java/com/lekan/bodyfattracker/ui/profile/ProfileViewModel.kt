@@ -2,9 +2,13 @@ package com.lekan.bodyfattracker.ui.profile
 
 import android.content.Context
 import android.net.Uri
+import android.os.Build
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.firestore.FirebaseFirestore
+import com.lekan.bodyfattracker.BuildConfig
 import com.lekan.bodyfattracker.data.UserPreferencesRepository
 import com.lekan.bodyfattracker.domain.IProfileRepository
+import com.lekan.bodyfattracker.model.UserFeedback
 import com.lekan.bodyfattracker.model.UserProfile
 import com.lekan.bodyfattracker.model.WeightUnit
 import com.lekan.bodyfattracker.ui.core.CoreViewModel
@@ -12,10 +16,12 @@ import com.lekan.bodyfattracker.ui.home.Gender
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
+import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 
@@ -34,13 +40,19 @@ data class ProfileScreenUiState(
     val profileSavedSuccessfully: Boolean = false,
     val showAboutSheet: Boolean = false,
     val showPrivacyPolicySheet: Boolean = false,
-    val selectedDisplayWeightUnit: WeightUnit = WeightUnit.KG // Added
+    val selectedDisplayWeightUnit: WeightUnit = WeightUnit.KG,
+    val isSuperUser: Boolean = true, // Added for testing feedback viewing
+    val showFeedbackDialog: Boolean = false,
+    val feedbackDialogText: String = "",
+    val isSendingFeedback: Boolean = false,
+    val feedbackSentMessage: String? = null
 )
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val profileRepository: IProfileRepository,
-    private val userPreferencesRepository: UserPreferencesRepository // Injected
+    private val userPreferencesRepository: UserPreferencesRepository,
+    private val firestore: FirebaseFirestore // Injected Firestore
 ) : CoreViewModel<ProfileScreenUiState>() {
 
     override fun initialize() = ProfileScreenUiState()
@@ -57,7 +69,6 @@ class ProfileViewModel @Inject constructor(
     fun updateDisplayWeightUnit(weightUnit: WeightUnit) {
         viewModelScope.launch {
             userPreferencesRepository.updateDisplayWeightUnit(weightUnit)
-            // The collect block above will automatically update the uiState
         }
     }
 
@@ -121,7 +132,6 @@ class ProfileViewModel @Inject constructor(
     fun cancelEditProfile() {
         val lastLoadedProfile = state.value.userProfile
         if (lastLoadedProfile != null) {
-            // Revert to the last loaded profile's state
             launch {
                 updateState {
                     copy(
@@ -133,12 +143,11 @@ class ProfileViewModel @Inject constructor(
                         photoPath = lastLoadedProfile.photoPath,
                         canSave = false,
                         errorMessage = null,
-                        showCreateProfileButton = false // Already has a profile
+                        showCreateProfileButton = false
                     )
                 }
             }
         } else {
-            // Was creating a new profile, so reset to empty and show create button
             launch {
                 updateState {
                     copy(
@@ -156,7 +165,6 @@ class ProfileViewModel @Inject constructor(
             }
         }
     }
-
 
     fun onNameChanged(name: String) {
         launch {
@@ -214,7 +222,11 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    fun onPhotoSelected(uri: Uri?, applicationContext: Context) {
+    fun onPhotoSelected(
+        uri: Uri?,
+        applicationContext: Context,
+        failedToSaveProfileMessage: String
+    ) {
         uri ?: return
         viewModelScope.launch {
             val internalPath = copyImageToInternalStorage(applicationContext, uri)
@@ -231,7 +243,7 @@ class ProfileViewModel @Inject constructor(
                     ).let { validateInputsInternal(it) }
                 }
             } ?: run {
-                updateState { copy(errorMessage = "Failed to save profile image.") }
+                updateState { copy(errorMessage = failedToSaveProfileMessage) }
             }
         }
     }
@@ -275,7 +287,6 @@ class ProfileViewModel @Inject constructor(
         val bodyFatGoalIsValidOrEmpty = currentState.bodyFatGoalInput.isEmpty() ||
                 (currentState.bodyFatGoalInput.toDoubleOrNull() != null && currentState.bodyFatGoalInput.toDouble() > 0 && currentState.bodyFatGoalInput.toDouble() < 100)
 
-
         val originalProfile = currentState.userProfile
         val changesMade = if (originalProfile == null) {
             currentState.nameInput.isNotEmpty() || currentState.ageInput.isNotEmpty() ||
@@ -316,7 +327,11 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    fun saveProfile() {
+    fun saveProfile(
+        invalidAgeMessage: String,
+        selectAGenderMessage: String,
+        invalidBodyFatGoalMessage: String
+    ) {
         viewModelScope.launch {
             if (!state.value.canSave) {
                 return@launch
@@ -330,15 +345,15 @@ class ProfileViewModel @Inject constructor(
             }
 
             if (ageToSave == null || ageToSave <= 0) {
-                updateState { copy(errorMessage = "Invalid age entered.") }
+                updateState { copy(errorMessage = invalidAgeMessage) }
                 return@launch
             }
             if (genderToSave == null) {
-                updateState { copy(errorMessage = "Please select a gender.") }
+                updateState { copy(errorMessage = selectAGenderMessage) }
                 return@launch
             }
             if (currentValidatedState.bodyFatGoalInput.isNotEmpty() && (bodyFatGoalToSave == null || bodyFatGoalToSave <= 0 || bodyFatGoalToSave >= 100)) {
-                updateState { copy(errorMessage = "Invalid Body Fat Goal entered.") }
+                updateState { copy(errorMessage = invalidBodyFatGoalMessage) }
                 return@launch
             }
 
@@ -375,12 +390,6 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    fun onPermissionDenied(message: String) {
-        launch {
-            updateState { copy(errorMessage = message) }
-        }
-    }
-
     fun onAboutAppClicked() {
         launch {
             updateState { copy(showAboutSheet = true) }
@@ -390,6 +399,78 @@ class ProfileViewModel @Inject constructor(
     fun onDismissAboutApp() {
         launch {
             updateState { copy(showAboutSheet = false) }
+        }
+    }
+
+    // Feedback related functions
+    fun onLeaveFeedbackClicked() {
+        launch {
+            updateState { copy(showFeedbackDialog = true) }
+        }
+    }
+
+    fun onDismissFeedbackDialog() {
+        launch {
+            updateState {
+                copy(
+                    showFeedbackDialog = false,
+                    feedbackDialogText = "",
+                    isSendingFeedback = false
+                )
+            }
+        }
+    }
+
+    fun onFeedbackDialogTextChanged(text: String) {
+        launch {
+            updateState { copy(feedbackDialogText = text) }
+        }
+    }
+
+    fun sendFeedback(
+        feedbackEmptyMessage: String,
+        feedbackSentMessage: String,
+        failedToSendMessage: String
+    ) {
+        if (state.value.feedbackDialogText.isBlank()) {
+            launch {
+                updateState { copy(feedbackSentMessage = feedbackEmptyMessage) }
+            }
+            return
+        }
+        launch {
+            updateState { copy(isSendingFeedback = true) }
+            val feedback = UserFeedback(
+                message = state.value.feedbackDialogText,
+                appVersion = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                deviceModel = "${Build.MANUFACTURER} ${Build.MODEL}",
+                androidVersion = Build.VERSION.RELEASE,
+                locale = Locale.getDefault().toString()
+            )
+            try {
+                firestore.collection("feedback").add(feedback).await()
+                updateState {
+                    copy(
+                        isSendingFeedback = false,
+                        showFeedbackDialog = false,
+                        feedbackDialogText = "",
+                        feedbackSentMessage = feedbackSentMessage
+                    )
+                }
+            } catch (e: Exception) {
+                updateState {
+                    copy(
+                        isSendingFeedback = false,
+                        feedbackSentMessage = failedToSendMessage
+                    )
+                }
+            }
+        }
+    }
+
+    fun clearFeedbackMessage() {
+        launch {
+            updateState { copy(feedbackSentMessage = null) }
         }
     }
 }

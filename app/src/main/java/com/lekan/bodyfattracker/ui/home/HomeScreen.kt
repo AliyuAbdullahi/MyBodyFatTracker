@@ -66,7 +66,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.lekan.bodyfattracker.BuildConfig
 import com.lekan.bodyfattracker.R
+import com.lekan.bodyfattracker.ui.ads.AdmobBanner
 import com.lekan.bodyfattracker.ui.home.components.LatestMeasurementCard
 import com.lekan.bodyfattracker.ui.home.components.LatestWeightEntryCard
 import com.lekan.bodyfattracker.ui.home.components.TimePickerDialog
@@ -324,6 +326,8 @@ fun HomeScreen(
                         latestMeasurement = latestMeasurement,
                         userProfile = uiState.userProfile
                     )
+
+                    AdmobBanner(modifier = Modifier.fillMaxWidth(), adUnitId = BuildConfig.HOME_BANNER_AD_UNIT_ID)
 
                     LatestWeightEntryCard(
                         latestWeightEntry = latestWeightEntry,

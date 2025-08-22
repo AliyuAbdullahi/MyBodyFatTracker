@@ -12,7 +12,7 @@ plugins {
 }
 
 val localProperties = Properties()
-val localPropertiesFile = rootProject.file("local.properties") // Or project.file("local.properties") if it's module-specific
+val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
     localPropertiesFile.inputStream().use { input ->
         localProperties.load(input)
@@ -37,8 +37,19 @@ android {
     }
 
     buildTypes {
+        signingConfigs {
+            create("release") {
+                storeFile = rootProject.file(localProperties.getProperty("RELEASE_STORE_FILE", ""))
+                storePassword = localProperties.getProperty("RELEASE_STORE_PASSWORD", "")
+                keyAlias = localProperties.getProperty("RELEASE_KEY_ALIAS", "")
+                keyPassword = localProperties.getProperty("RELEASE_KEY_PASSWORD", "")
+            }
+        }
+
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true // <-- CHANGED
+            isShrinkResources = true
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -47,6 +58,11 @@ android {
                 "String",
                 "PROFILE_BANNER_AD_UNIT_ID",
                 "\"${localProperties.getProperty("ProfileBanner", "")}\""
+            )
+            buildConfigField(
+                "String",
+                "HOME_BANNER_AD_UNIT_ID",
+                "\"${localProperties.getProperty("HomeBanner", "")}\""
             )
             buildConfigField(
                 "String",
@@ -71,6 +87,11 @@ android {
                 "String",
                 "EDUCATION_BANNER_AD_UNIT_ID",
                 "\"ca-app-pub-3940256099942544/6300978111\""
+            )
+            buildConfigField(
+                "String",
+                "HOME_BANNER_AD_UNIT_ID",
+                "\"ca-app-pub-3940256099942544/6300978111\"" // Google's test banner ID
             )
             buildConfigField(
                 "String",

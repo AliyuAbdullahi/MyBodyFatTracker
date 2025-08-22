@@ -140,7 +140,7 @@
     <string name="measurement_reminder_title">Enable Measurement Reminder</string>
     <string name="set_reminder_time_action">Set reminder time</string>
     <string name="reminder_set_for_prefix">Reminder set for : %1$s</string>
-    <string name="no_profile_setup">No Profile setup yet</string>
+    <string name="no_profile_setup">Create a profile and track your progress!</string>
     <string name="welcome_user">Welcome back 😊</string>
     <string name="confirm">Confirm</string>
     <string name="cancel">Cancel</string>
@@ -246,4 +246,26 @@
     <string name="weight_kg">Weight (kg)</string>
     <string name="recorded_on_label">Recorded on: %1$s</string>
     <string name="notes">Notes: %1$s</string>
+    <string name="leave_feedback">Leave Feedback</string>
+    <string name="we_d_love_to_hear_your_thoughts_or_suggestions">We\'d love to hear your thoughts or suggestions!</string>
+    <string name="type_your_feedback_here">Type your feedback here...</string>
+    <string name="send">Send</string>
+    <string name="leave_feedback_label">Leave Feedback</string>
+    <string name="select_gender_placeholder">Select Gender</string>
+    <string name="profile_saved_successfully">Profile saved successfully</string>
+    <string name="no_profile_found">No Profile Found</string>
+    <string name="edit_profile_content_description">Profile Edit</string>
+    <string name="navigate_back_content_description">Navigate back</string>
+    <string name="profile_destination">Profile</string>
+    <string name="profile_picture_content_description">Profile Picture</string>
+    <string name="select_photo_content_description">Select Photo</string>
+    <string name="display_weight_in_label">Weight</string>
+    <string name="body_fat_goal_display_format">BodyfatGoal: %1$s</string>
+    <string name="gender_display_format">Gender: %1$s</string>
+    <string name="age_display_format">Age: %1$s</string>
+    <string name="photo_saving_failed">Photo saving failed</string>
+    <string name="feedback_is_empty">Feedback is empty</string>
+    <string name="feedback_sent_successfully">Feedback sent successfully</string>
+    <string name="failed_to_send_feedback">Failed to send feedback</string>
+    <string name="invalid_age">Invalid Age</string>
 </resources>
