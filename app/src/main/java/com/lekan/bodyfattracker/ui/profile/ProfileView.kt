@@ -6,10 +6,13 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -101,7 +104,8 @@ private fun showToast(context: android.content.Context, message: String) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    viewModel: ProfileViewModel = hiltViewModel()
+    viewModel: ProfileViewModel = hiltViewModel(),
+    openFeedbacksScreen: () -> Unit
 ) {
     val uiState by viewModel.state.collectAsState()
     var currentTargetState by remember { mutableStateOf(ProfileContent.OVERVIEW) }
@@ -211,7 +215,10 @@ fun ProfileScreen(
                             onLeaveFeedbackClicked = viewModel::onLeaveFeedbackClicked,
                             selectedDisplayWeightUnit = uiState.selectedDisplayWeightUnit,
                             onWeightUnitSelected = viewModel::updateDisplayWeightUnit,
-                            isSuperUser = uiState.isSuperUser
+                            isSuperUser = uiState.isSuperUser,
+                            onSeeFeedbacksClicked = {
+                                openFeedbacksScreen()
+                            }
                         )
                     }
                 }
@@ -249,10 +256,18 @@ fun ProfileScreen(
                             uriHandler.openUri(AboutPageUri)
                         },
                         onLeaveFeedbackClicked = viewModel::onLeaveFeedbackClicked,
+                        isSuperUser = uiState.isSuperUser,
+                        onSeeFeedbacksClicked = {
+                            openFeedbacksScreen()
+                        }
                     )
                 }
             }
-            if (uiState.showAboutSheet) {
+            AnimatedVisibility(
+                visible = uiState.showAboutSheet,
+                enter = slideInVertically(initialOffsetY = { fullHeight -> fullHeight }) + fadeIn(),
+                exit = slideOutVertically(targetOffsetY = { fullHeight -> fullHeight }) + fadeOut()
+            ) {
                 AboutAppBottomSheet(
                     onDismiss = {
                         viewModel.onDismissAboutApp()
@@ -292,6 +307,7 @@ fun ProfileOverview(
     onLeaveFeedbackClicked: () -> Unit,
     selectedDisplayWeightUnit: WeightUnit,
     onWeightUnitSelected: (WeightUnit) -> Unit,
+    onSeeFeedbacksClicked: () -> Unit = {},
     isSuperUser: Boolean
 ) {
     Column(
@@ -356,6 +372,16 @@ fun ProfileOverview(
             modifier = Modifier.clickable(onClick = onLeaveFeedbackClicked)
         )
         Divider()
+        if (isSuperUser) {
+            Divider()
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.see_feedbacks_label)) },
+                leadingContent = { Icon(Icons.Outlined.Feedback, null) },
+                modifier = Modifier.clickable(onClick = onSeeFeedbacksClicked)
+            )
+            Divider()
+        }
+
         // Add more ListItems for other settings if needed
     }
 }
@@ -375,6 +401,8 @@ fun ProfileForm(
     onShowAboutSheet: () -> Unit,
     onShowPrivacySheet: () -> Unit,
     onLeaveFeedbackClicked: () -> Unit,
+    isSuperUser: Boolean = false,
+    onSeeFeedbacksClicked: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val singlePhotoPickerLauncher = rememberLauncherForActivityResult(
@@ -534,6 +562,16 @@ fun ProfileForm(
             modifier = Modifier.clickable(onClick = onLeaveFeedbackClicked)
         )
         Divider()
+
+        if (isSuperUser) {
+            Divider()
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.see_feedbacks_label)) },
+                leadingContent = { Icon(Icons.Outlined.Feedback, null) },
+                modifier = Modifier.clickable(onClick = onSeeFeedbacksClicked)
+            )
+            Divider()
+        }
 
         // AdMob Banner Placeholder - Assuming you have AdView composable
         // com.google.android.gms.ads.AdView

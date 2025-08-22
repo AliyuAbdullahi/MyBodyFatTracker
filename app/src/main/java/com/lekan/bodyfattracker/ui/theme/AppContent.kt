@@ -28,6 +28,7 @@ import androidx.navigation3.ui.rememberSceneSetupNavEntryDecorator
 import com.lekan.bodyfattracker.ui.addweight.AddWeightEntryScreen
 import com.lekan.bodyfattracker.ui.education.EducationScreen
 import com.lekan.bodyfattracker.ui.education.YoutubePlayerScreen
+import com.lekan.bodyfattracker.ui.feedback.FeedbacksScreen
 import com.lekan.bodyfattracker.ui.history.HistoryScreen
 import com.lekan.bodyfattracker.ui.home.HomeScreen
 import com.lekan.bodyfattracker.ui.home.measurement.screens.SevenSitesMeasurementScreen
@@ -39,7 +40,8 @@ import com.lekan.bodyfattracker.ui.profile.ProfileScreen
 fun AppContent(
     navigationViewModel: NavViewModel = hiltViewModel()
 ) {
-    val navItems = listOf(Screen.Home, Screen.Education, Screen.History, Screen.Profile) // Updated navItems
+    val navItems =
+        listOf(Screen.Home, Screen.Education, Screen.History, Screen.Profile) // Updated navItems
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -89,7 +91,14 @@ fun AppContent(
                         }
                     }
                     entry<Screen.History> { HistoryScreen() }
-                    entry<Screen.Profile> { ProfileScreen() }
+                    entry<Screen.Profile> {
+                        ProfileScreen {
+
+                        }
+                    }
+                    entry<Screen.FeedbacksScreen> {
+                        FeedbacksScreen()
+                    }
                     entry<Screen.ThreeSitesMeasurement> { navKey ->
                         ThreeSitesMeasurementScreen(
                             onBackPressed = { navigationViewModel.popLast() },
@@ -105,7 +114,10 @@ fun AppContent(
 
                     // Entries for the new screens using the defined Screen objects
                     entry<Screen.AddMeasurementScreen> { navKey ->
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Text("Placeholder for Add Measurement Screen (${navKey.label})")
                         }
                     }
@@ -117,7 +129,9 @@ fun AppContent(
                     }
 
                     entry<Screen.YoutubePlayer> { youtubeId ->
-                        YoutubePlayerScreen(videoId = youtubeId.videoId, onNavigateUp = { navigationViewModel.popLast() })
+                        YoutubePlayerScreen(
+                            videoId = youtubeId.videoId,
+                            onNavigateUp = { navigationViewModel.popLast() })
                     }
                 }
             )
@@ -134,7 +148,15 @@ private fun BFCNavigationBar(
         navItems.forEach {
             val currentScreenKey = navigationViewModel.backStack.last().route
             NavigationBarItem(
-                icon = { it.icon?.let { icon -> androidx.compose.material3.Icon(painter = rememberVectorPainter(image = icon), contentDescription = null) } },
+                icon = {
+                    it.icon?.let { icon ->
+                        androidx.compose.material3.Icon(
+                            painter = rememberVectorPainter(
+                                image = icon
+                            ), contentDescription = null
+                        )
+                    }
+                },
                 label = { Text(it.label) },
                 selected = currentScreenKey == it.route,
                 onClick = {

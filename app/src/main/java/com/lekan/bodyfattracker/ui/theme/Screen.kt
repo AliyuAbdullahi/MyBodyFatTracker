@@ -1,6 +1,7 @@
 package com.lekan.bodyfattracker.ui.theme
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
@@ -24,4 +25,6 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector?
 
     // Screen for playing YouTube videos
     data class YoutubePlayer(val videoId: String) : Screen("youtube_player", "Video Player")
+
+    data object FeedbacksScreen : Screen("feedbacks", "Feedbacks", Icons.AutoMirrored.Filled.List)
 }

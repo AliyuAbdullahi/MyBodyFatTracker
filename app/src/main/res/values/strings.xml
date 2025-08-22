@@ -251,6 +251,7 @@
     <string name="type_your_feedback_here">Type your feedback here...</string>
     <string name="send">Send</string>
     <string name="leave_feedback_label">Leave Feedback</string>
+    <string name="see_feedbacks_label">See Feedbacks</string>
     <string name="select_gender_placeholder">Select Gender</string>
     <string name="profile_saved_successfully">Profile saved successfully</string>
     <string name="no_profile_found">No Profile Found</string>
