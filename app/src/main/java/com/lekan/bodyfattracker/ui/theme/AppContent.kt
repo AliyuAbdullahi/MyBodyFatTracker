@@ -93,11 +93,13 @@ fun AppContent(
                     entry<Screen.History> { HistoryScreen() }
                     entry<Screen.Profile> {
                         ProfileScreen {
-
+                            navigationViewModel.push(Screen.FeedbacksScreen)
                         }
                     }
                     entry<Screen.FeedbacksScreen> {
-                        FeedbacksScreen()
+                        FeedbacksScreen {
+                            navigationViewModel.popLast()
+                        }
                     }
                     entry<Screen.ThreeSitesMeasurement> { navKey ->
                         ThreeSitesMeasurementScreen(

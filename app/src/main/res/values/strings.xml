@@ -269,4 +269,32 @@
     <string name="feedback_sent_successfully">Feedback sent successfully</string>
     <string name="failed_to_send_feedback">Failed to send feedback</string>
     <string name="invalid_age">Invalid Age</string>
+
+    <string name="feedbacks_screen_title">User Feedbacks</string>
+    <string name="failed_to_load_feedbacks">Failed to load feedbacks. Please try again.</string>
+    <string name="no_feedbacks_yet">No feedback submitted yet.</string>
+    <string name="clear_all_feedbacks_menu">Clear All Feedbacks</string>
+    <string name="delete_selected_feedbacks_action">Delete Selected</string>
+    <string name="clear_selection_action">Clear Selection</string>
+    <string name="confirm_deletion_title">Confirm Deletion</string>
+    <string name="confirm_clear_all_feedbacks_message">Are you sure you want to delete ALL feedbacks? This action cannot be undone.</string>
+    <string name="delete_button_text">Delete</string>
+    <string name="clear_all_button_text">Clear All</string>
+    <string name="cancel_button_text">Cancel</string>
+    <string name="items_selected_title">%d Selected</string>
+    <string name="feedback_from_template">Feedback from: %s (v%s)</string>
+    <string name="device_info_template">Device: %s (Android %s, Locale: %s)</string>
+
+    <!-- For ViewModel messages (ensure these match what you set in ViewModel) -->
+    <string name="feedbacks_deleted_successfully">Selected feedback(s) deleted.</string>
+    <string name="all_feedbacks_cleared_successfully">All feedbacks cleared.</string>
+    <string name="feedback_deletion_failed">Failed to delete feedback(s).</string>
+    <string name="feedbacks_clearing_failed">Failed to clear all feedbacks.</string>
+    <string name="view_user_feedbacks_label">View User Feedbacks</string>
+    <string name="clear_all_feedbacks_label">Clear All Feedbacks</string>
+    <string name="delete_selected_feedbacks_label">Delete Selected</string>
+    <string name="user_feedbacks_title">Feedbacks</string>
+    <string name="no_feedback_submitted_yet">No Feedbacks yet</string>
+    <string name="confirm_delete_single_feedback_message">Confirm Delete</string>
+
 </resources>
