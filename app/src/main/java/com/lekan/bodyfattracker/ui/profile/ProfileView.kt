@@ -95,7 +95,7 @@ enum class ProfileContent {
     OVERVIEW, FORM
 }
 
-const val AboutPageUri = "https://aliyuabdullahi.github.io/MyBodyFatTracker/privacy_policy"
+const val AboutPageUri = "https://aliyuabdullahi.github.io/MyBodyFatTracker/app_privacy_policy"
 
 
 private fun showToast(context: android.content.Context, message: String) {
